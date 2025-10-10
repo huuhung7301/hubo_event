@@ -6,7 +6,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -17,4 +17,62 @@ model Post {
     updatedAt DateTime @updatedAt
 
     @@index([name])
+}
+
+model Work {
+  id             Int           @id @default(autoincrement())
+  title          String
+  imageUrl       String
+  notes          String?
+  categories     WorkCategory[]
+  items          WorkItem[]
+  optionalItems  WorkOptionalItem[]
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+}
+
+model Category {
+  id       Int           @id @default(autoincrement())
+  name     String         @unique
+  works    WorkCategory[]
+}
+
+model WorkCategory {
+  workId     Int
+  categoryId Int
+  work       Work       @relation(fields: [workId], references: [id])
+  category   Category   @relation(fields: [categoryId], references: [id])
+
+  @@id([workId, categoryId])
+}
+
+model Item {
+  id         Int      @id @default(autoincrement())
+  key        String   @unique
+  name       String
+  basePrice  Float
+  unit       String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  workItems  WorkItem[]
+  WorkOptionalItem WorkOptionalItem[]
+}
+
+model WorkItem {
+  id       Int    @id @default(autoincrement())
+  workId   Int
+  itemId   Int
+  quantity Int     @default(1)
+  work     Work    @relation(fields: [workId], references: [id])
+  item     Item    @relation(fields: [itemId], references: [id])
+}
+
+model WorkOptionalItem {
+  id       Int    @id @default(autoincrement())
+  workId   Int
+  itemId   Int
+  quantity Int     @default(1)
+  work     Work    @relation(fields: [workId], references: [id])
+  item     Item    @relation(fields: [itemId], references: [id])
 }

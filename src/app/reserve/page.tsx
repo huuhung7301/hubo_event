@@ -1,200 +1,156 @@
 "use client";
 
+import { useSearchParams } from "next/navigation";
 import { useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { DayPicker } from "react-day-picker";
-import "react-day-picker/dist/style.css";
+import StepTracker from "../reserveForm/StepTracker";
+import ReserveStep1Content from "../reserveForm/ReserveStep1Content";
+import ReserveStep2Content from "../reserveForm/ReserveStep2Content";
+import ReserveStep3Content from "../reserveForm/ReserveStep3Content";
+import ReserveStep4Content from "../reserveForm/ReserveStep4Content";
+import ReserveStep5Content from "../reserveForm/ReserveStep5Content";
+import type { SelectionItem } from "../_components/selectionCard";
 
-interface FormData {
-  date: string;
-  address: string;
-  suburb: string;
-  postcode: string;
-}
-
-// Mock availability data for demonstration
-const availabilityData: { [date: string]: "high" | "medium" | "low" | "full" } = {
-  "2025-10-07": "high",
-  "2025-10-08": "medium",
-  "2025-10-09": "low",
-  "2025-10-10": "full",
-  "2025-10-11": "high",
-  "2025-10-12": "medium",
-  "2025-10-13": "low",
-  "2025-10-14": "full",
-};
-
-export default function ReserveStep2() {
-  const router = useRouter();
+export default function ReservePage() {
   const searchParams = useSearchParams();
+  const stepParam = searchParams.get("step") || "1";
   const packageId = searchParams.get("id");
 
-  const [form, setForm] = useState<FormData>({
-    date: "",
-    address: "",
-    suburb: "",
-    postcode: "",
+  const [currentStep, setCurrentStep] = useState<number>(
+    parseInt(stepParam, 10),
+  );
+
+  // Centralized state for all steps
+  // In ReservePage.tsx
+  // Centralized state for all steps
+  const [reservationData, setReservationData] = useState({
+    step1: {
+      backdrop: undefined as SelectionItem | undefined,
+      decorations: [] as SelectionItem[],
+      theme: undefined as SelectionItem | undefined,
+      message: "",
+    },
+    step2: {
+      date: "",
+      postcode: "",
+      deliveryFee: undefined as number | undefined,
+    },
+    step3: {
+      addOns: [] as any[],
+    },
   });
 
-  const [deliveryFee, setDeliveryFee] = useState<number | null>(null);
-  const [loading, setLoading] = useState(false);
+  // Log Step 1 data whenever it changes
+  useEffect(() => {
+    console.log("Step 1 data changed:", reservationData);
+  }, [reservationData]);
 
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>();
-
-  // Convert availability data to DayPicker modifiers
-  const modifiers = {
-    high: Object.keys(availabilityData)
-      .filter((d) => availabilityData[d] === "high")
-      .map((d) => new Date(d)),
-    medium: Object.keys(availabilityData)
-      .filter((d) => availabilityData[d] === "medium")
-      .map((d) => new Date(d)),
-    low: Object.keys(availabilityData)
-      .filter((d) => availabilityData[d] === "low")
-      .map((d) => new Date(d)),
-    full: Object.keys(availabilityData)
-      .filter((d) => availabilityData[d] === "full")
-      .map((d) => new Date(d)),
+  // Called when Step 1 submits
+  const handleStep1Submit = (data: {
+    backdrop?: SelectionItem;
+    decorations: SelectionItem[];
+    theme?: SelectionItem;
+    message: string;
+  }) => {
+    setReservationData((prev) => ({
+      ...prev,
+      step1: {
+        backdrop: data.backdrop ?? undefined,
+        decorations: data.decorations,
+        theme: data.theme ?? undefined,
+        message: data.message,
+      },
+    }));
+    setCurrentStep(2); // go to Step 2
   };
 
-  const modifiersClassNames = {
-    high: "bg-green-200 text-green-800 rounded-lg",
-    medium: "bg-yellow-200 text-yellow-800 rounded-lg",
-    low: "bg-orange-200 text-orange-800 rounded-lg",
-    full: "bg-red-200 text-red-800 rounded-lg opacity-50 pointer-events-none",
-  };
+  // --- inside ReservePage ---
+const handleStep2Submit = (data: {
+  date: string;
+  postcode: string;
+  deliveryFee?: number;
+}) => {
+  setReservationData((prev) => ({
+    ...prev,
+    step2: {
+      date: data.date,
+      postcode: data.postcode,
+      deliveryFee: data.deliveryFee !== undefined ? data.deliveryFee : undefined,
+    },
+  }));
+  console.log("Step 2 data submitted:", data);
+  setCurrentStep(3); // go to Step 3
+};
 
-  const handleSelectDate = (date: Date | undefined) => {
-    if (!date) return;
-    const dateStr = date.toISOString().split("T")[0];
-    if (dateStr && availabilityData[dateStr] === "full") return; // can't select full dates
-    setSelectedDate(date);
-    setForm({ ...form, date: dateStr ?? "" });
-  };
+const handleStep3Submit = (data: { addOns: SelectionItem[] }) => {
+  setReservationData((prev) => ({
+    ...prev,
+    step3: data,
+  }));
+  console.log("Step 3 data submitted:", data);
+  setCurrentStep(4);
+};
 
-  const checkAvailability = async () => {
-    if (!form.date) return;
-    setLoading(true);
-    await new Promise((r) => setTimeout(r, 500)); // simulate API delay
-    const postcodeNum = parseInt(form.postcode);
-    const fee = postcodeNum >= 2000 && postcodeNum <= 2100 ? 50 : 80;
-    setDeliveryFee(fee);
-    setLoading(false);
-  };
 
-  const handleNext = () => {
-    const params = new URLSearchParams({
-      step: "3",
-      id: packageId || "",
-      ...form,
-      deliveryFee: String(deliveryFee || 0),
-    });
-    router.push(`/reserve/addons?${params.toString()}`);
-  };
+
+  useEffect(() => {
+    setCurrentStep(parseInt(stepParam, 10));
+  }, [stepParam]);
+
+  const steps = [
+    "Create Package",
+    "Check Availability",
+    "Add-ons",
+    "Deposit Payment",
+    "Confirmation",
+  ];
+
+  const stepUrls = [
+    "/reserve?step=1", // Step 1
+    `/reserve?step=2&id=${packageId || ""}`, // Step 2
+    `/reserve?step=3&id=${packageId || ""}`, // Step 3
+    `/reserve?step=4&id=${packageId || ""}`, // Step 4
+    `/reserve?step=5&id=${packageId || ""}`, // Step 5
+  ];
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-12">
-      <div className="bg-white rounded-2xl shadow-md w-full max-w-lg p-8">
-        <h1 className="text-2xl font-semibold mb-4">
-          Step 2 — Check Availability & Delivery
-        </h1>
+    <div
+      className="relative flex min-h-screen items-center justify-center px-4 py-12"
+      style={{
+        backgroundImage:
+          "url('neutral-abstract-texture-simple-background.jpg')",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+      }}
+    >
+      <div className="absolute inset-0 bg-white/0"></div>
 
-        {packageId ? (
-          <p className="text-sm text-gray-500 mb-6">
-            Selected package ID: <span className="font-medium">{packageId}</span>
-          </p>
+      <div className="relative w-full max-w-lg rounded-2xl bg-white p-8 shadow-md">
+        {/* Step Tracker */}
+        <StepTracker
+          currentStep={currentStep}
+          steps={steps}
+          stepUrls={stepUrls}
+        />
+
+        {/* Step Content */}
+        {currentStep === 1 ? (
+          <ReserveStep1Content
+            data={reservationData.step1}
+            onSubmit={handleStep1Submit}
+          />
+        ) : currentStep === 2 ? (
+          <ReserveStep2Content data={reservationData.step2} onSubmit={handleStep2Submit} />
+        ) : currentStep === 3 ? (
+          <ReserveStep3Content data={reservationData.step3} onSubmit={handleStep3Submit}/>
+        ) : currentStep === 4 ? (
+          <ReserveStep4Content data={reservationData} onConfirm={() => setCurrentStep(5)} />
+        ) : currentStep === 5 ? (
+          <ReserveStep5Content packageId={packageId!} />
         ) : (
-          <p className="text-sm text-gray-500 mb-6">
-            No package selected — you’re creating your own setup.
+          <p className="mt-10 text-center text-gray-500">
+            Step {currentStep} content not implemented yet.
           </p>
         )}
-
-        <div className="space-y-4">
-          {/* Calendar */}
-          <div>
-            <label className="block text-sm font-medium mb-2">
-              Select Event Date
-            </label>
-            <DayPicker
-              mode="single"
-              selected={selectedDate}
-              onSelect={handleSelectDate}
-              modifiers={modifiers}
-              modifiersClassNames={modifiersClassNames}
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              Green = Highly available, Yellow = Partly available, Orange = Almost full, Red = Fully booked
-            </p>
-          </div>
-
-          {/* Address Fields */}
-          <div>
-            <label className="block text-sm font-medium mb-1">Event Address</label>
-            <input
-              type="text"
-              name="address"
-              value={form.address}
-              onChange={(e) => setForm({ ...form, address: e.target.value })}
-              placeholder="123 Example St"
-              required
-              className="w-full rounded-lg border border-gray-300 p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          <div className="flex gap-3">
-            <div className="flex-1">
-              <label className="block text-sm font-medium mb-1">Suburb</label>
-              <input
-                type="text"
-                name="suburb"
-                value={form.suburb}
-                onChange={(e) => setForm({ ...form, suburb: e.target.value })}
-                placeholder="Sydney"
-                required
-                className="w-full rounded-lg border border-gray-300 p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div className="w-28">
-              <label className="block text-sm font-medium mb-1">Postcode</label>
-              <input
-                type="text"
-                name="postcode"
-                value={form.postcode}
-                onChange={(e) => setForm({ ...form, postcode: e.target.value })}
-                placeholder="2000"
-                required
-                className="w-full rounded-lg border border-gray-300 p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-          </div>
-
-          {/* Check Availability Button */}
-          <button
-            onClick={checkAvailability}
-            disabled={loading || !form.date}
-            className="w-full bg-blue-600 text-white font-medium py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-60"
-          >
-            {loading ? "Checking..." : "Check Availability"}
-          </button>
-
-          {/* Availability Info */}
-          {deliveryFee !== null && (
-            <div className="mt-4 border rounded-lg p-4 bg-gray-50">
-              <p className="text-green-600 font-medium">
-                ✅ Available on {form.date}
-              </p>
-              <p className="mt-2 text-gray-700">
-                Delivery & setup fee: <span className="font-semibold">${deliveryFee}</span>
-              </p>
-              <button
-                onClick={handleNext}
-                className="mt-4 w-full bg-green-600 text-white py-2 rounded-lg font-medium hover:bg-green-700 transition-colors"
-              >
-                Continue to Add-ons →
-              </button>
-            </div>
-          )}
-        </div>
       </div>
     </div>
   );

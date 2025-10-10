@@ -69,7 +69,7 @@ export default function PackageCard({
       {isDesktop && (
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogContent className="!max-w-[70vw] rounded-2xl shadow-lg border-0 ">
-            <DialogTitle>
+            <DialogTitle className="">
               <VisuallyHidden> {title}</VisuallyHidden>
             </DialogTitle>
 
