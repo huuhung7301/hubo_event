@@ -15,6 +15,8 @@ import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 
 export interface PackageItem {
   name: string;
+  key: string;
+  quantity: number;
   price: number;
 }
 interface PackageCardProps {
@@ -39,7 +41,9 @@ export default function PackageCard({
   const [open, setOpen] = useState(false);
 
   const [isDesktop, setIsDesktop] = useState(true);
-
+  console.log("items", items);
+  console.log("optionalItems", optionalItems);
+  console.log("totalPrice", totalPrice);
   useEffect(() => {
     const media = window.matchMedia("(min-width: 768px)");
     setIsDesktop(media.matches);
@@ -58,7 +62,7 @@ export default function PackageCard({
         <img
           src={src}
           alt={title}
-          className="h-72 w-full object-cover transition-transform duration-500 group-hover:scale-105"
+          className="h-48 sm:h-72 w-full object-cover transition-transform duration-500 group-hover:scale-105"
         />
         <div className="absolute bottom-0 left-0 w-full translate-y-full bg-black/70 p-4 text-white transition-transform duration-500 ease-out group-hover:translate-y-0">
           <h3 className="text-lg font-semibold">{title}</h3>

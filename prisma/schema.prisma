@@ -2,7 +2,7 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-    provider = "prisma-client-js"
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -11,68 +11,105 @@ datasource db {
 }
 
 model Post {
-    id        Int      @id @default(autoincrement())
-    name      String
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+  id        Int      @id @default(autoincrement())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-    @@index([name])
+  @@index([name])
 }
 
 model Work {
-  id             Int           @id @default(autoincrement())
-  title          String
-  imageUrl       String
-  notes          String?
-  categories     WorkCategory[]
-  items          WorkItem[]
-  optionalItems  WorkOptionalItem[]
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  id            Int                @id @default(autoincrement())
+  title         String
+  imageUrl      String
+  notes         String?
+  categories    WorkCategory[]
+  items         WorkItem[]
+  optionalItems WorkOptionalItem[]
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  Reservation   Reservation[]
 }
 
 model Category {
-  id       Int           @id @default(autoincrement())
-  name     String         @unique
-  works    WorkCategory[]
+  id    Int            @id @default(autoincrement())
+  name  String         @unique
+  works WorkCategory[]
 }
 
 model WorkCategory {
   workId     Int
   categoryId Int
-  work       Work       @relation(fields: [workId], references: [id])
-  category   Category   @relation(fields: [categoryId], references: [id])
+  work       Work     @relation(fields: [workId], references: [id])
+  category   Category @relation(fields: [categoryId], references: [id])
 
   @@id([workId, categoryId])
 }
 
 model Item {
-  id         Int      @id @default(autoincrement())
-  key        String   @unique
-  name       String
-  basePrice  Float
-  unit       String?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id        Int      @id @default(autoincrement())
+  key       String   @unique
+  name      String
+  basePrice Float
+  unit      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  workItems  WorkItem[]
+  workItems        WorkItem[]
   WorkOptionalItem WorkOptionalItem[]
+  ReservationItem  ReservationItem[]
 }
 
 model WorkItem {
-  id       Int    @id @default(autoincrement())
+  id       Int  @id @default(autoincrement())
   workId   Int
   itemId   Int
-  quantity Int     @default(1)
-  work     Work    @relation(fields: [workId], references: [id])
-  item     Item    @relation(fields: [itemId], references: [id])
+  quantity Int  @default(1)
+  work     Work @relation(fields: [workId], references: [id])
+  item     Item @relation(fields: [itemId], references: [id])
 }
 
 model WorkOptionalItem {
-  id       Int    @id @default(autoincrement())
+  id       Int  @id @default(autoincrement())
   workId   Int
   itemId   Int
-  quantity Int     @default(1)
-  work     Work    @relation(fields: [workId], references: [id])
-  item     Item    @relation(fields: [itemId], references: [id])
+  quantity Int  @default(1)
+  work     Work @relation(fields: [workId], references: [id])
+  item     Item @relation(fields: [itemId], references: [id])
+}
+
+model Reservation {
+  id            Int               @id @default(autoincrement())
+  workId        Int
+  work          Work              @relation(fields: [workId], references: [id])
+  customerName  String?
+  customerEmail String?
+  customerPhone String?
+  notes         String?
+  totalPrice    Float             @default(0)
+  status        ReservationStatus @default(PENDING)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  items ReservationItem[]
+}
+
+model ReservationItem {
+  id             Int     @id @default(autoincrement())
+  reservationId  Int
+  itemId         Int
+  quantity       Int     @default(1)
+  priceAtBooking Float // snapshot of price at the time of reservation
+  isOptional     Boolean @default(false)
+
+  reservation Reservation @relation(fields: [reservationId], references: [id])
+  item        Item        @relation(fields: [itemId], references: [id])
+}
+
+enum ReservationStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
 }

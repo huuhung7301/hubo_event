@@ -6,7 +6,9 @@ import FilteredArea from "./_components/filteredArea";
 
 export default async function Home() {
   const hello = await api.post.hello({ text: "from tRPC" });
-
+  const works = await api.work.getAllWorks();
+  const categories = await api.work.getAllCategories();
+  console.log("aaa", works)
   void api.post.getLatest.prefetch();
 
   return (
@@ -34,7 +36,7 @@ export default async function Home() {
 
           {/* Works Section */}
           <section className="px-8 py-12">
-            <FilteredArea />
+            <FilteredArea works={works} categories={categories} />
           </section>
         </div>
       </main>

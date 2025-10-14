@@ -1,85 +1,102 @@
 import { PrismaClient } from "@prisma/client";
+
 const prisma = new PrismaClient();
 
 async function main() {
   // ------------------------------
-  // 1. Create categories
+  // 1. Categories
   // ------------------------------
-  const [furniture, decoration, lighting] = await Promise.all([
-    prisma.category.create({ data: { name: "Furniture" } }),
-    prisma.category.create({ data: { name: "Decoration" } }),
-    prisma.category.create({ data: { name: "Lighting" } }),
-  ]);
+  const categoryNames = [
+    "Birthdays", "Baby Showers", "Weddings", "Pink", "Blue",
+    "Neutral", "Floral", "Adventure", "Classic", "Modern",
+  ];
+
+  const categories = [];
+  for (const name of categoryNames) {
+    const cat = await prisma.category.create({ data: { name } });
+    categories.push(cat);
+  }
 
   // ------------------------------
-  // 2. Create items
+  // 2. Items
   // ------------------------------
-  const [chair, table, balloon, candle, lamp] = await Promise.all([
-    prisma.item.create({ data: { key: "chair", name: "Chair", basePrice: 50, unit: "pcs" } }),
-    prisma.item.create({ data: { key: "table", name: "Table", basePrice: 100, unit: "pcs" } }),
-    prisma.item.create({ data: { key: "balloon", name: "Balloon", basePrice: 2, unit: "pcs" } }),
-    prisma.item.create({ data: { key: "candle", name: "Candle", basePrice: 5, unit: "pcs" } }),
-    prisma.item.create({ data: { key: "lamp", name: "Lamp", basePrice: 30, unit: "pcs" } }),
-  ]);
+  const itemsData = [
+    { key: "chair", name: "Chair", basePrice: 50, unit: "pcs" },
+    { key: "table", name: "Table", basePrice: 100, unit: "pcs" },
+    { key: "balloon", name: "Balloon", basePrice: 2, unit: "pcs" },
+    { key: "candle", name: "Candle", basePrice: 5, unit: "pcs" },
+    { key: "lamp", name: "Lamp", basePrice: 30, unit: "pcs" },
+    { key: "speaker", name: "Speaker", basePrice: 200, unit: "pcs" },
+    { key: "tent", name: "Tent", basePrice: 500, unit: "pcs" },
+    { key: "flower", name: "Flower bouquet", basePrice: 20, unit: "pcs" },
+    { key: "rug", name: "Rug", basePrice: 80, unit: "pcs" },
+    { key: "banner", name: "Banner", basePrice: 15, unit: "pcs" },
+    { key: "streamer", name: "Streamer", basePrice: 3, unit: "pcs" },
+    { key: "giftbag", name: "Gift Bag", basePrice: 8, unit: "pcs" },
+    { key: "tablecloth", name: "Table Cloth", basePrice: 25, unit: "pcs" },
+    { key: "napkins", name: "Napkins", basePrice: 5, unit: "pcs" },
+    { key: "plates", name: "Plates", basePrice: 10, unit: "pcs" },
+    { key: "cups", name: "Cups", basePrice: 5, unit: "pcs" },
+    { key: "centerpiece", name: "Centerpiece", basePrice: 30, unit: "pcs" },
+    { key: "photoBooth", name: "Photo Booth", basePrice: 300, unit: "pcs" },
+    { key: "confetti", name: "Confetti", basePrice: 2, unit: "pcs" },
+    { key: "cakeStand", name: "Cake Stand", basePrice: 40, unit: "pcs" },
+  ];
+
+  const items = [];
+  for (const item of itemsData) {
+    const it = await prisma.item.create({ data: item });
+    items.push(it);
+  }
 
   // ------------------------------
-  // 3. Create works
+  // 3. Works
   // ------------------------------
-  const [birthdaySetup, weddingSetup] = await Promise.all([
-    prisma.work.create({
-      data: {
-        title: "Birthday Setup",
-        imageUrl: "https://picsum.photos/seed/birthday/500/300", // replace with Supabase URL
-        notes: "Setup for a small birthday party",
-      },
-    }),
-    prisma.work.create({
-      data: {
-        title: "Wedding Setup",
-        imageUrl: "https://picsum.photos/seed/wedding/500/300", // replace with Supabase URL
-        notes: "Setup for a wedding event",
-      },
-    }),
-  ]);
+  const worksData = Array.from({ length: 12 }).map((_, i) => ({
+    title: `Work Setup ${i + 1}`,
+    imageUrl: `https://picsum.photos/seed/work${i + 1}/500/300`,
+    notes: `Dummy notes for work setup ${i + 1}`,
+  }));
+
+  const works = [];
+  for (const work of worksData) {
+    const w = await prisma.work.create({ data: work });
+    works.push(w);
+  }
 
   // ------------------------------
-  // 4. Assign categories to works
+  // 4. Assign random categories to works
   // ------------------------------
-  await prisma.workCategory.createMany({
-    data: [
-      { workId: birthdaySetup.id, categoryId: furniture.id },
-      { workId: birthdaySetup.id, categoryId: decoration.id },
-      { workId: weddingSetup.id, categoryId: furniture.id },
-      { workId: weddingSetup.id, categoryId: decoration.id },
-      { workId: weddingSetup.id, categoryId: lighting.id },
-    ],
-  });
+  for (const work of works) {
+    const shuffledCategories = categories.sort(() => 0.5 - Math.random()).slice(0, 3);
+    for (const cat of shuffledCategories) {
+      await prisma.workCategory.create({ data: { workId: work.id, categoryId: cat.id } });
+    }
+  }
 
   // ------------------------------
-  // 5. Add main items to works
+  // 5. Assign main items
   // ------------------------------
-  await prisma.workItem.createMany({
-    data: [
-      { workId: birthdaySetup.id, itemId: chair.id, quantity: 10 },
-      { workId: birthdaySetup.id, itemId: table.id, quantity: 2 },
-      { workId: weddingSetup.id, itemId: chair.id, quantity: 100 },
-      { workId: weddingSetup.id, itemId: table.id, quantity: 20 },
-    ],
-  });
+  for (const work of works) {
+    const shuffledItems = items.sort(() => 0.5 - Math.random()).slice(0, 5);
+    for (const item of shuffledItems) {
+      const quantity = Math.floor(Math.random() * 20) + 1;
+      await prisma.workItem.create({ data: { workId: work.id, itemId: item.id, quantity } });
+    }
+  }
 
   // ------------------------------
-  // 6. Add optional items to works
+  // 6. Assign optional items
   // ------------------------------
-  await prisma.workOptionalItem.createMany({
-    data: [
-      { workId: birthdaySetup.id, itemId: balloon.id, quantity: 20 },
-      { workId: birthdaySetup.id, itemId: candle.id, quantity: 5 },
-      { workId: weddingSetup.id, itemId: balloon.id, quantity: 200 },
-      { workId: weddingSetup.id, itemId: lamp.id, quantity: 50 },
-    ],
-  });
+  for (const work of works) {
+    const shuffledItems = items.sort(() => 0.5 - Math.random()).slice(0, 3);
+    for (const item of shuffledItems) {
+      const quantity = Math.floor(Math.random() * 10) + 1;
+      await prisma.workOptionalItem.create({ data: { workId: work.id, itemId: item.id, quantity } });
+    }
+  }
 
-  console.log("✅ Database seeded successfully!");
+  console.log("✅ Dummy data seeded successfully!");
 }
 
 main()

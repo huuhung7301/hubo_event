@@ -2,20 +2,6 @@
 
 import { useState } from "react";
 import PackageCard from "./packageCard";
-import { itemsCatalog } from "./catalog";
-
-const categories = [
-  "Birthdays",
-  "Baby Showers",
-  "Weddings",
-  "Pink",
-  "Blue",
-  "Neutral",
-  "Floral",
-  "Adventure",
-  "Classic",
-  "Modern",
-];
 
 type PriceRange = { label: string; min: number; max: number };
 
@@ -25,100 +11,55 @@ const priceRanges: PriceRange[] = [
   { label: "$500+", min: 500, max: Infinity },
 ];
 
-const works = [
-  {
-    id: 1,
-    categories: ["Birthdays", "Classic"],
-    title: "Bear Explorer Balloon Setup",
-    src: "https://picsum.photos/id/1015/500/500",
-    items: [
-      { key: "balloonGarland", quantity: 1 },
-      { key: "backdropArch", quantity: 1 },
-      { key: "teddyBear", quantity: 1 },
-      { key: "hotAirBalloon", quantity: 1 },
-      { key: "rocket", quantity: 1 },
-      { key: "airplaneTeddy", quantity: 1 },
-      { key: "cakePlinth", quantity: 1 },
-    ],
-    optionalItems: [
-      { key: "neonSign", quantity: 1 },
-      { key: "extraBalloons", quantity: 1 },
-    ],
-    notes: "Color palette can be customized. Setup & pack-down included.",
-  },
-  {
-    id: 2,
-    categories: ["Baby Showers"],
-    title: "Dreamy Cloud Setup",
-    src: "https://picsum.photos/id/1011/500/500",
-    items: [
-      { key: "balloonGarland", quantity: 1 },
-      { key: "backdropArch", quantity: 1 },
-    ],
-    optionalItems: [{ key: "extraBalloons", quantity: 1 }],
-    notes: "Perfect for baby showers. Includes setup & pack-down.",
-  },
-  {
-    id: 3,
-    categories: ["Weddings", "Baby Showers"],
-    title: "Romantic Floral Arch",
-    src: "https://picsum.photos/id/1016/500/500",
-    items: [
-      { key: "backdropArch", quantity: 1 },
-      { key: "cakePlinth", quantity: 2 },
-    ],
-    optionalItems: [{ key: "neonSign", quantity: 1 }],
-    notes: "Flowers available in multiple color palettes.",
-  },
-];
+type Item = {
+  key: string;
+  name: string;
+  price: number;
+  quantity: number;
+  unit?: string | null;
+};
 
-function mapItems(items: { key: string; quantity: number }[]) {
-  return items.map((item) => {
-    const catalogItem = itemsCatalog[item.key];
-    if (!catalogItem) throw new Error(`Item ${item.key} not found in catalog`);
-    return {
-      name: catalogItem.name,
-      price: catalogItem.basePrice * (item.quantity || 1),
-      quantity: item.quantity || 1,
-      unit: catalogItem.unit,
-    };
-  });
-}
+type Work = {
+  id: number;
+  title: string;
+  src: string;
+  categories: string[];
+  items: Item[];
+  optionalItems: Item[];
+  notes: string;
+};
 
-export default function FilteredArea() {
+type FilteredAreaProps = {
+  works: Work[];
+  categories: string[];
+};
+
+export default function FilteredArea({ works, categories }: FilteredAreaProps) {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedPrices, setSelectedPrices] = useState<PriceRange[]>([]);
 
-  const toggleCategory = (cat: string) => {
+  const toggleCategory = (cat: string) =>
     setSelectedCategories((prev) =>
-      prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat],
+      prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat]
     );
-  };
 
-  const togglePrice = (range: PriceRange) => {
+  const togglePrice = (range: PriceRange) =>
     setSelectedPrices((prev) =>
-      prev.includes(range) ? prev.filter((r) => r !== range) : [...prev, range],
+      prev.includes(range) ? prev.filter((r) => r !== range) : [...prev, range]
     );
-  };
 
   const filteredWorks = works.filter((work) => {
-    const mappedItems = mapItems(work.items);
-    const mappedOptionalItems = mapItems(work.optionalItems);
     const totalPrice =
-      mappedItems.reduce((sum, i) => sum + i.price, 0) +
-      mappedOptionalItems.reduce((sum, i) => sum + i.price, 0);
+      work.items.reduce((sum, i) => sum + i.price * i.quantity, 0) +
+      work.optionalItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
 
-    // Multi-select category match
     const matchesCategory =
       selectedCategories.length === 0 ||
       work.categories.some((cat) => selectedCategories.includes(cat));
 
-    // Multi-select price match
     const matchesPrice =
       selectedPrices.length === 0 ||
-      selectedPrices.some(
-        (range) => totalPrice >= range.min && totalPrice <= range.max,
-      );
+      selectedPrices.some((range) => totalPrice >= range.min && totalPrice <= range.max);
 
     return matchesCategory && matchesPrice;
   });
@@ -162,13 +103,11 @@ export default function FilteredArea() {
       </div>
 
       {/* Works Gallery */}
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3">
+      <div className="grid grid-cols-2 gap-6 sm:grid-cols-2 md:grid-cols-3">
         {filteredWorks.map((work) => {
-          const mappedItems = mapItems(work.items);
-          const mappedOptionalItems = mapItems(work.optionalItems);
           const totalPrice =
-            mappedItems.reduce((sum, i) => sum + i.price, 0) +
-            mappedOptionalItems.reduce((sum, i) => sum + i.price, 0);
+            work.items.reduce((sum, i) => sum + i.price * i.quantity, 0) +
+            work.optionalItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
 
           return (
             <PackageCard
@@ -176,8 +115,8 @@ export default function FilteredArea() {
               src={work.src}
               title={work.title}
               categories={work.categories}
-              items={mappedItems}
-              optionalItems={mappedOptionalItems}
+              items={work.items}
+              optionalItems={work.optionalItems}
               totalPrice={totalPrice}
               notes={work.notes}
             />

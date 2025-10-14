@@ -1,5 +1,7 @@
 "use client";
 
+import { useState, useMemo } from "react";
+import { api } from "~/trpc/react"; // 👈 import tRPC client
 import type { PackageItem } from "./packageCard";
 
 interface DesktopOverlayProps {
@@ -23,84 +25,188 @@ export default function DesktopOverlay({
   totalPrice,
   notes,
 }: DesktopOverlayProps) {
+  const [optionals, setOptionals] = useState(optionalItems);
+  console.log("items test: ", items);
+
+  // ✅ Setup the mutation
+  const addWork = api.work.addWork.useMutation({
+    onSuccess: () => {
+      alert("Work added successfully!");
+      onClose();
+    },
+    onError: (err) => {
+      console.error(err);
+      alert("Failed to add work.");
+    },
+  });
+
+  const handleQuantityChange = (index: number, value: number) => {
+    const updated = [...optionals];
+    if (updated[index]) {
+      updated[index].quantity = Math.max(0, Number(value));
+    }
+    setOptionals(updated);
+  };
+
+  const optionalTotal = useMemo(
+    () => optionals.reduce((sum, item) => sum + item.price * item.quantity, 0),
+    [optionals],
+  );
+
+  const includedTotal = useMemo(
+    () => items.reduce((sum, item) => sum + item.price * item.quantity, 0),
+    [items],
+  );
+
+  const grandTotal = includedTotal + optionalTotal;
+
+  // 🧭 Handle Reserve click
+  const handleReserve = () => {
+    console.log("🧾 Work being reserved:");
+    console.log("Title:", title);
+    console.log("Image:", src);
+    console.log("Notes:", notes);
+    console.log("Categories:", categories);
+
+    console.log("Items:", items);
+    console.log(
+      "Items mapped:",
+      items.map((i) => ({
+        key: i.name,
+        quantity: i.quantity,
+      })),
+    );
+
+    console.log("Optional items:", optionals);
+    console.log(
+      "Optional items mapped:",
+      optionals.map((i) => ({
+        key: i.name,
+        quantity: i.quantity,
+      })),
+    );
+
+    addWork.mutate({
+      title,
+      imageUrl: src,
+      notes,
+      categories,
+      items: items.map((i) => ({
+        key: i.key,
+        quantity: i.quantity,
+      })),
+      optionalItems: optionals.map((i) => ({
+        key: i.key,
+        quantity: i.quantity,
+      })),
+    });
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/50"
-        onClick={onClose} // click outside to close
-      />
-
-      {/* Modal Content */}
-      <div className="relative bg-white rounded-2xl shadow-xl w-full p-10 flex flex-col md:flex-row overflow-hidden z-10">
-        {/* Close Button */}
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+      <div className="relative z-10 flex w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white p-10 shadow-xl md:flex-row">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-gray-500 hover:text-black text-2xl z-10"
+          className="absolute top-4 right-4 z-10 text-2xl text-gray-500 hover:text-black"
         >
           ✕
         </button>
 
-        {/* Image Section */}
-        <div className="md:w-1/2 w-full bg-gray-100 flex items-center justify-center p-6">
+        <div className="flex w-full items-center justify-center bg-gray-100 p-6 md:w-1/2">
           <img
             src={src}
             alt={title}
-            className="w-full h-[400px] object-cover rounded-lg"
+            className="h-[400px] w-full rounded-lg object-cover"
           />
         </div>
 
-        {/* Content Section */}
-        <div className="md:w-1/2 w-full p-6 flex flex-col max-h-[80vh] overflow-y-auto">
-          <h2 className="text-3xl font-bold mb-4">{title}</h2>
+        <div className="flex max-h-[80vh] w-full flex-col overflow-y-auto p-6 md:w-1/2">
+          <h2 className="mb-4 text-3xl font-bold">{title}</h2>
 
           {categories.length > 0 && (
-            <p className="text-sm text-gray-500 mb-4">
+            <p className="mb-4 text-sm text-gray-500">
               <strong>Categories:</strong> {categories.join(", ")}
             </p>
           )}
 
+          {/* Core Items */}
           <div className="mb-4">
-            <h3 className="font-semibold mb-2">Included Items</h3>
-            <ul className="space-y-2">
+            <h3 className="mb-2 font-semibold text-gray-800">
+              Core component items
+            </h3>
+            <ul className="divide-y divide-gray-200">
               {items.map((item) => (
                 <li
                   key={item.name}
-                  className="flex justify-between border-b pb-1 text-gray-700"
+                  className="flex justify-between py-2 text-gray-700"
                 >
-                  <span>{item.name}</span>
-                  <span>${item.price}</span>
+                  <span>
+                    {item.name}{" "}
+                    <span className="text-sm text-gray-500">
+                      (${item.price})
+                    </span>
+                  </span>
+                  <span className="font-medium text-gray-900">
+                    ${(item.price * item.quantity).toFixed(2)}
+                  </span>
                 </li>
               ))}
             </ul>
           </div>
 
-          {optionalItems.length > 0 && (
+          {/* Optional Items */}
+          {optionals.length > 0 && (
             <div className="mb-4">
-              <h3 className="font-semibold mb-2">Optional Add-ons</h3>
-              <ul className="space-y-2">
-                {optionalItems.map((item) => (
+              <h3 className="mb-2 font-semibold text-gray-800">
+                Optional Add-ons
+              </h3>
+              <ul className="divide-y divide-gray-200">
+                {optionals.map((item, index) => (
                   <li
                     key={item.name}
-                    className="flex justify-between border-b pb-1 text-gray-600"
+                    className="flex items-center justify-between py-2 text-gray-700"
                   >
-                    <span>{item.name}</span>
-                    <span>${item.price}</span>
+                    <div className="flex items-center space-x-3">
+                      <span>
+                        {item.name}{" "}
+                        <span className="text-sm text-gray-500">
+                          (${item.price})
+                        </span>
+                      </span>
+                      <input
+                        type="number"
+                        min="0"
+                        value={item.quantity}
+                        onChange={(e) =>
+                          handleQuantityChange(index, Number(e.target.value))
+                        }
+                        className="w-16 rounded border p-1 text-center text-sm"
+                      />
+                    </div>
+                    <span className="font-medium text-gray-900">
+                      ${(item.price * item.quantity).toFixed(2)}
+                    </span>
                   </li>
                 ))}
               </ul>
             </div>
           )}
 
-          <div className="flex justify-between items-center font-bold text-lg border-t pt-3 mb-4">
-            <span>Total</span>
-            <span>${totalPrice}</span>
+          {/* Total */}
+          <div className="mb-4 flex items-center justify-between border-t pt-3 text-lg font-bold">
+            <span>Grand Total</span>
+            <span>${grandTotal.toFixed(2)}</span>
           </div>
 
-          {notes && <p className="text-sm text-gray-500 mb-4">{notes}</p>}
+          {notes && <p className="mb-4 text-sm text-gray-500">{notes}</p>}
 
-          <button className="w-full bg-black py-3 text-white font-semibold rounded-lg hover:bg-gray-800 transition">
-            Reserve This Setup
+          <button
+            disabled={addWork.isPending}
+            onClick={handleReserve}
+            className="w-full rounded-lg bg-black py-3 font-semibold text-white transition hover:bg-gray-800 disabled:opacity-50"
+          >
+            {addWork.isPending ? "Saving..." : "Reserve This Setup"}
           </button>
         </div>
       </div>
