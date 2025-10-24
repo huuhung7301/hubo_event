@@ -2,16 +2,20 @@
 
 import { useState, useMemo } from "react";
 import type { PackageItem } from "./packageCard";
+import { useRouter } from "next/navigation";
+import { useUser, useClerk, SignInButton } from "@clerk/nextjs";
+import { api } from "~/trpc/react";
 
 interface MobileOverlayProps {
   onClose: () => void;
   title: string;
   src: string;
   categories: string[];
-  items: PackageItem[];
+  coreItems: PackageItem[];
   optionalItems?: PackageItem[];
   totalPrice: number;
   notes?: string;
+  workId: number;
 }
 
 export default function MobileOverlay({
@@ -19,31 +23,85 @@ export default function MobileOverlay({
   title,
   src,
   categories,
-  items,
+  coreItems,
   optionalItems = [],
   totalPrice,
   notes,
+  workId,
 }: MobileOverlayProps) {
   // Track optional quantities
   const [optionals, setOptionals] = useState(optionalItems);
+  const [items, setItems] = useState(coreItems);
 
-  const handleQuantityChange = (index: number, value: number) => {
-    const updated = [...optionals];
+  const router = useRouter();
+  const { isSignedIn } = useUser();
+  const { openSignIn } = useClerk();
+
+  const createReservation = api.reservation.createReservation.useMutation({
+    onSuccess: (data) => {
+      // ✅ After successful reservation, redirect to step 2
+      router.push(`/reserve/step2?id=${data.id}`);
+      onClose();
+    },
+    onError: (err) => {
+      console.error(err);
+      alert("Failed to create reservation.");
+    },
+  });
+  const handleQuantityChange = (
+    index: number,
+    value: number,
+    array: PackageItem[],
+    setArray: React.Dispatch<React.SetStateAction<PackageItem[]>>,
+  ) => {
+    const updated = [...array];
     if (updated[index]) {
       updated[index].quantity = Math.max(0, Number(value));
     }
-    setOptionals(updated);
+    setArray(updated);
   };
 
+  const handleReserve = async () => {
+    if (!isSignedIn) {
+      // User not signed in — open Clerk modal
+      openSignIn({ redirectUrl: window.location.href });
+      return;
+    }
+
+    try {
+      // User is signed in — create reservation
+      const reservation = await createReservation.mutateAsync({
+        workId,
+        notes,
+        items: items.map((i) => ({
+          key: i.key,
+          quantity: i.quantity,
+          priceAtBooking: i.price,
+        })),
+        optionalItems: optionals.map((i) => ({
+          key: i.key,
+          quantity: i.quantity,
+          priceAtBooking: i.price,
+        })),
+      });
+
+      // ✅ After success, redirect to step 2 with reservation ID
+      router.push(`/reserve?step=2&id=${reservation.id}`);
+      onClose();
+    } catch (err) {
+      console.error(err);
+      alert("Failed to create reservation.");
+    }
+  };
   // Live totals
   const optionalTotal = useMemo(
     () => optionals.reduce((sum, item) => sum + item.price * item.quantity, 0),
-    [optionals]
+    [optionals],
   );
 
   const includedTotal = useMemo(
     () => items.reduce((sum, item) => sum + item.price * item.quantity, 0),
-    [items]
+    [items],
   );
 
   const grandTotal = includedTotal + optionalTotal;
@@ -81,7 +139,7 @@ export default function MobileOverlay({
               {items.map((item, index) => (
                 <li
                   key={item.name}
-                  className="flex justify-between items-center py-2 text-gray-700"
+                  className="flex items-center justify-between py-2 text-gray-700"
                 >
                   <div className="flex flex-col">
                     <span>
@@ -95,9 +153,14 @@ export default function MobileOverlay({
                       min="0"
                       value={item.quantity}
                       onChange={(e) =>
-                        handleQuantityChange(index, Number(e.target.value))
+                        handleQuantityChange(
+                          index,
+                          Number(e.target.value),
+                          items,
+                          setItems,
+                        )
                       }
-                      className="mt-1 w-20 border rounded text-center text-sm p-1"
+                      className="mt-1 w-20 rounded border p-1 text-center text-sm"
                     />
                   </div>
                   <span className="font-medium text-gray-900">
@@ -119,7 +182,7 @@ export default function MobileOverlay({
               {optionals.map((item, index) => (
                 <li
                   key={item.name}
-                  className="flex justify-between items-center py-2 text-gray-700"
+                  className="flex items-center justify-between py-2 text-gray-700"
                 >
                   <div className="flex flex-col">
                     <span>
@@ -133,9 +196,14 @@ export default function MobileOverlay({
                       min="0"
                       value={item.quantity}
                       onChange={(e) =>
-                        handleQuantityChange(index, Number(e.target.value))
+                        handleQuantityChange(
+                            index,
+                            Number(e.target.value),
+                            optionals,
+                            setOptionals,
+                          )
                       }
-                      className="mt-1 w-20 border rounded text-center text-sm p-1"
+                      className="mt-1 w-20 rounded border p-1 text-center text-sm"
                     />
                   </div>
                   <span className="font-medium text-gray-900">
@@ -155,16 +223,17 @@ export default function MobileOverlay({
 
         {/* Notes */}
         {notes && (
-          <p className="mb-4 text-sm text-gray-600 leading-relaxed">{notes}</p>
+          <p className="mb-4 text-sm leading-relaxed text-gray-600">{notes}</p>
         )}
       </div>
 
       {/* Fixed Button */}
       <button
-        onClick={onClose}
+        disabled={createReservation.isPending}
+        onClick={handleReserve}
         className="fixed bottom-0 left-0 w-full rounded-t-lg bg-black py-4 text-lg font-semibold text-white shadow-lg transition hover:bg-gray-800"
       >
-        Reserve This Setup
+        {createReservation.isPending ? "Saving..." : "Reserve This Setup"}
       </button>
     </div>
   );

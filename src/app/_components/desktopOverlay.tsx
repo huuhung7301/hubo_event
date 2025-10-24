@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { api } from "~/trpc/react"; // 👈 import tRPC client
+import { useRouter } from "next/navigation";
+import { useUser, useClerk, SignInButton } from "@clerk/nextjs";
+import { api } from "~/trpc/react";
 import type { PackageItem } from "./packageCard";
 
 interface DesktopOverlayProps {
@@ -9,10 +11,11 @@ interface DesktopOverlayProps {
   title: string;
   src: string;
   categories: string[];
-  items: PackageItem[];
+  coreItems: PackageItem[];
   optionalItems?: PackageItem[];
   totalPrice: number;
   notes?: string;
+  workId: number;
 }
 
 export default function DesktopOverlay({
@@ -20,32 +23,42 @@ export default function DesktopOverlay({
   title,
   src,
   categories,
-  items,
+  coreItems,
   optionalItems = [],
   totalPrice,
+  workId,
   notes,
 }: DesktopOverlayProps) {
   const [optionals, setOptionals] = useState(optionalItems);
-  console.log("items test: ", items);
+  const [items, setItems] = useState(coreItems);
 
-  // ✅ Setup the mutation
-  const addWork = api.work.addWork.useMutation({
-    onSuccess: () => {
-      alert("Work added successfully!");
+  const router = useRouter();
+  const { isSignedIn } = useUser();
+  const { openSignIn } = useClerk(); // 👈 open sign-in modal
+
+  const createReservation = api.reservation.createReservation.useMutation({
+    onSuccess: (data) => {
+      // ✅ After successful reservation, redirect to step 2
+      router.push(`/reserve/step2?id=${data.id}`);
       onClose();
     },
     onError: (err) => {
       console.error(err);
-      alert("Failed to add work.");
+      alert("Failed to create reservation.");
     },
   });
 
-  const handleQuantityChange = (index: number, value: number) => {
-    const updated = [...optionals];
+  const handleQuantityChange = (
+    index: number,
+    value: number,
+    array: PackageItem[],
+    setArray: React.Dispatch<React.SetStateAction<PackageItem[]>>,
+  ) => {
+    const updated = [...array];
     if (updated[index]) {
       updated[index].quantity = Math.max(0, Number(value));
     }
-    setOptionals(updated);
+    setArray(updated);
   };
 
   const optionalTotal = useMemo(
@@ -60,46 +73,37 @@ export default function DesktopOverlay({
 
   const grandTotal = includedTotal + optionalTotal;
 
-  // 🧭 Handle Reserve click
-  const handleReserve = () => {
-    console.log("🧾 Work being reserved:");
-    console.log("Title:", title);
-    console.log("Image:", src);
-    console.log("Notes:", notes);
-    console.log("Categories:", categories);
+  const handleReserve = async () => {
+    if (!isSignedIn) {
+      // User not signed in — open Clerk modal
+      openSignIn({ redirectUrl: window.location.href });
+      return;
+    }
 
-    console.log("Items:", items);
-    console.log(
-      "Items mapped:",
-      items.map((i) => ({
-        key: i.name,
-        quantity: i.quantity,
-      })),
-    );
+    try {
+      // User is signed in — create reservation
+      const reservation = await createReservation.mutateAsync({
+        workId,
+        notes,
+        items: items.map((i) => ({
+          key: i.key,
+          quantity: i.quantity,
+          priceAtBooking: i.price,
+        })),
+        optionalItems: optionals.map((i) => ({
+          key: i.key,
+          quantity: i.quantity,
+          priceAtBooking: i.price,
+        })),
+      });
 
-    console.log("Optional items:", optionals);
-    console.log(
-      "Optional items mapped:",
-      optionals.map((i) => ({
-        key: i.name,
-        quantity: i.quantity,
-      })),
-    );
-
-    addWork.mutate({
-      title,
-      imageUrl: src,
-      notes,
-      categories,
-      items: items.map((i) => ({
-        key: i.key,
-        quantity: i.quantity,
-      })),
-      optionalItems: optionals.map((i) => ({
-        key: i.key,
-        quantity: i.quantity,
-      })),
-    });
+      // ✅ After success, redirect to step 2 with reservation ID
+      router.push(`/reserve?step=2&id=${reservation.id}`);
+      onClose();
+    } catch (err) {
+      console.error(err);
+      alert("Failed to create reservation.");
+    }
   };
 
   return (
@@ -113,6 +117,7 @@ export default function DesktopOverlay({
           ✕
         </button>
 
+        {/* Left: image */}
         <div className="flex w-full items-center justify-center bg-gray-100 p-6 md:w-1/2">
           <img
             src={src}
@@ -121,6 +126,7 @@ export default function DesktopOverlay({
           />
         </div>
 
+        {/* Right: content */}
         <div className="flex max-h-[80vh] w-full flex-col overflow-y-auto p-6 md:w-1/2">
           <h2 className="mb-4 text-3xl font-bold">{title}</h2>
 
@@ -131,29 +137,47 @@ export default function DesktopOverlay({
           )}
 
           {/* Core Items */}
-          <div className="mb-4">
-            <h3 className="mb-2 font-semibold text-gray-800">
-              Core component items
-            </h3>
-            <ul className="divide-y divide-gray-200">
-              {items.map((item) => (
-                <li
-                  key={item.name}
-                  className="flex justify-between py-2 text-gray-700"
-                >
-                  <span>
-                    {item.name}{" "}
-                    <span className="text-sm text-gray-500">
-                      (${item.price})
+          {items.length > 0 && (
+            <div className="mb-4">
+              <h3 className="mb-2 font-semibold text-gray-800">
+                Core component items
+              </h3>
+              <ul className="divide-y divide-gray-200">
+                {items.map((item, index) => (
+                  <li
+                    key={item.name}
+                    className="flex items-center justify-between py-2 text-gray-700"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <span>
+                        {item.name}{" "}
+                        <span className="text-sm text-gray-500">
+                          (${item.price})
+                        </span>
+                      </span>
+                      <input
+                        type="number"
+                        min="0"
+                        value={item.quantity}
+                        onChange={(e) =>
+                          handleQuantityChange(
+                            index,
+                            Number(e.target.value),
+                            items,
+                            setItems,
+                          )
+                        }
+                        className="w-16 rounded border p-1 text-center text-sm"
+                      />
+                    </div>
+                    <span className="font-medium text-gray-900">
+                      ${(item.price * item.quantity).toFixed(2)}
                     </span>
-                  </span>
-                  <span className="font-medium text-gray-900">
-                    ${(item.price * item.quantity).toFixed(2)}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           {/* Optional Items */}
           {optionals.length > 0 && (
@@ -179,7 +203,12 @@ export default function DesktopOverlay({
                         min="0"
                         value={item.quantity}
                         onChange={(e) =>
-                          handleQuantityChange(index, Number(e.target.value))
+                          handleQuantityChange(
+                            index,
+                            Number(e.target.value),
+                            optionals,
+                            setOptionals,
+                          )
                         }
                         className="w-16 rounded border p-1 text-center text-sm"
                       />
@@ -201,12 +230,13 @@ export default function DesktopOverlay({
 
           {notes && <p className="mb-4 text-sm text-gray-500">{notes}</p>}
 
+          {/* Reserve button */}
           <button
-            disabled={addWork.isPending}
+            disabled={createReservation.isPending}
             onClick={handleReserve}
             className="w-full rounded-lg bg-black py-3 font-semibold text-white transition hover:bg-gray-800 disabled:opacity-50"
           >
-            {addWork.isPending ? "Saving..." : "Reserve This Setup"}
+            {createReservation.isPending ? "Saving..." : "Reserve This Setup"}
           </button>
         </div>
       </div>

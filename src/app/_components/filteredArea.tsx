@@ -112,6 +112,7 @@ export default function FilteredArea({ works, categories }: FilteredAreaProps) {
           return (
             <PackageCard
               key={work.id}
+              workId={work.id}
               src={work.src}
               title={work.title}
               categories={work.categories}

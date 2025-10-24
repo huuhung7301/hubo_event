@@ -27,6 +27,7 @@ interface PackageCardProps {
   optionalItems?: PackageItem[];
   totalPrice: number;
   notes?: string;
+  workId: number;
 }
 
 export default function PackageCard({
@@ -37,6 +38,7 @@ export default function PackageCard({
   optionalItems = [],
   totalPrice,
   notes,
+  workId
 }: PackageCardProps) {
   const [open, setOpen] = useState(false);
 
@@ -76,16 +78,16 @@ export default function PackageCard({
             <DialogTitle className="">
               <VisuallyHidden> {title}</VisuallyHidden>
             </DialogTitle>
-
             <DesktopOverlay
               onClose={() => setOpen(false)}
               title={title}
               src={src}
               categories={categories}
-              items={items}
+              coreItems={items}
               optionalItems={optionalItems}
               totalPrice={totalPrice}
               notes={notes}
+              workId={workId}
             />
           </DialogContent>
         </Dialog>
@@ -106,10 +108,11 @@ export default function PackageCard({
               title={title}
               src={src}
               categories={categories}
-              items={items}
+              coreItems={items}
               optionalItems={optionalItems}
               totalPrice={totalPrice}
               notes={notes}
+              workId={workId}
             />
           </SheetContent>
         </Sheet>
