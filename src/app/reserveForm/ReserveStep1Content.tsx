@@ -18,27 +18,35 @@ interface ScrollGridProps {
   ) => void;
 }
 
-const ScrollGrid = React.memo(
-  ({ items, selectedCheck, onSelect, innerRef, scrollKey, handleScroll }: ScrollGridProps) => (
-    <div
-      ref={innerRef}
-      onScroll={(e) => handleScroll(scrollKey, e)}
-      className="flex snap-x snap-mandatory space-x-4 overflow-x-auto pb-2"
-    >
-      <div className="grid auto-cols grid-flow-col grid-rows-2 gap-4">
-        {items.map((item) => (
-          <div key={item.title} className="snap-start">
-            <SelectionCard
-              item={item}
-              selected={selectedCheck(item)}
-              onSelect={onSelect}
-            />
-          </div>
-        ))}
-      </div>
+const ScrollGridComponent = ({
+  items,
+  selectedCheck,
+  onSelect,
+  innerRef,
+  scrollKey,
+  handleScroll,
+}: ScrollGridProps) => (
+  <div
+    ref={innerRef}
+    onScroll={(e) => handleScroll(scrollKey, e)}
+    className="flex snap-x snap-mandatory space-x-4 overflow-x-auto pb-2"
+  >
+    <div className="grid auto-cols grid-flow-col grid-rows-2 gap-4">
+      {items.map((item) => (
+        <div key={item.title} className="snap-start">
+          <SelectionCard
+            item={item}
+            selected={selectedCheck(item)}
+            onSelect={onSelect}
+          />
+        </div>
+      ))}
     </div>
-  )
+  </div>
 );
+
+export const ScrollGrid = React.memo(ScrollGridComponent);
+
 
 interface ReserveStep1ContentProps {
   data: {

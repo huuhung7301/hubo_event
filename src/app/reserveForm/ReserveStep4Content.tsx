@@ -52,11 +52,11 @@ export default function ReserveStep4Content({ data, onConfirm }: ReserveStep4Con
 
   // --- Calculate total price ---
   const total =
-    (data.step1.backdrop?.price || 0) +
-    data.step1.decorations.reduce((sum, d) => sum + (d.price || 0), 0) +
-    (data.step1.theme?.price || 0) +
-    data.step3.addOns.reduce((sum, a) => sum + (a.price || 0), 0) +
-    (data.step2.deliveryFee || 0);
+    (data.step1.backdrop?.price ?? 0) +
+    data.step1.decorations.reduce((sum, d) => sum + (d.price ?? 0), 0) +
+    (data.step1.theme?.price ?? 0) +
+    data.step3.addOns.reduce((sum, a) => sum + (a.price ?? 0), 0) +
+    (data.step2.deliveryFee ?? 0);
 
   return (
     <div className="space-y-8">
@@ -99,11 +99,11 @@ export default function ReserveStep4Content({ data, onConfirm }: ReserveStep4Con
         <h3 className="text-lg font-semibold text-gray-700 border-b pb-1">Step 2: Availability & Delivery</h3>
         <p>
           <span className="font-medium text-gray-700">Date:</span>{" "}
-          {data.step2.date || "N/A"}
+          {data.step2.date ?? "N/A"}
         </p>
         <p>
           <span className="font-medium text-gray-700">Postcode:</span>{" "}
-          {data.step2.postcode || "N/A"}
+          {data.step2.postcode ?? "N/A"}
         </p>
         {data.step2.deliveryFee !== undefined && (
           <p>

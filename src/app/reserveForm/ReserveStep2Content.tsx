@@ -15,7 +15,7 @@ interface ReserveStep2ContentProps {
   onSubmit: (updatedData: Step2Data) => void;
 }
 
-const availabilityData: { [date: string]: "medium" | "low" | "full" } = {
+const availabilityData: Record<string, "medium" | "low" | "full"> = {
   "2025-10-10": "medium",
   "2025-10-11": "low",
   "2025-10-12": "low",
