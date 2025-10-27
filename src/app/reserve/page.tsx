@@ -9,15 +9,38 @@ import ReserveStep3Content from "../reserveForm/ReserveStep3Content";
 import ReserveStep4Content from "../reserveForm/ReserveStep4Content";
 import ReserveStep5Content from "../reserveForm/ReserveStep5Content";
 import type { SelectionItem } from "../_components/selectionCard";
+import { useUser } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
+import { api } from "~/trpc/react";
+import Step1 from "../reserveForm/ReserveStep1Content";
 
 export default function ReservePage() {
   const searchParams = useSearchParams();
-  const stepParam = searchParams.get("step") || "1";
   const packageId = searchParams.get("id");
+  const router = useRouter();
+  const { user, isLoaded } = useUser();
 
-  const [currentStep, setCurrentStep] = useState<number>(
-    parseInt(stepParam, 10),
-  );
+  const { data: reservation, isLoading } =
+    api.reservation.getReservation.useQuery(
+      { id: Number(packageId) },
+      { enabled: !!packageId },
+    );
+  useEffect(() => {
+    if (!isLoaded) return;
+    if (!packageId) {
+      setCurrentStep(1);
+      return;
+    }
+
+    if (!isLoading && reservation) {
+      if (reservation.userId === user?.id) {
+        setCurrentStep(2); // ✅ correct user
+      } else {
+        router.push("/reserve"); // ❌ not owner — redirect
+      }
+    }
+  }, [packageId, reservation, user, isLoaded, isLoading, router]);
+  const [currentStep, setCurrentStep] = useState<number>(1);
 
   // Centralized state for all steps
   // In ReservePage.tsx
@@ -64,37 +87,32 @@ export default function ReservePage() {
   };
 
   // --- inside ReservePage ---
-const handleStep2Submit = (data: {
-  date: string;
-  postcode: string;
-  deliveryFee?: number;
-}) => {
-  setReservationData((prev) => ({
-    ...prev,
-    step2: {
-      date: data.date,
-      postcode: data.postcode,
-      deliveryFee: data.deliveryFee !== undefined ? data.deliveryFee : undefined,
-    },
-  }));
-  console.log("Step 2 data submitted:", data);
-  setCurrentStep(3); // go to Step 3
-};
+  const handleStep2Submit = (data: {
+    date: string;
+    postcode: string;
+    deliveryFee?: number;
+  }) => {
+    setReservationData((prev) => ({
+      ...prev,
+      step2: {
+        date: data.date,
+        postcode: data.postcode,
+        deliveryFee:
+          data.deliveryFee !== undefined ? data.deliveryFee : undefined,
+      },
+    }));
+    console.log("Step 2 data submitted:", data);
+    setCurrentStep(3); // go to Step 3
+  };
 
-const handleStep3Submit = (data: { addOns: SelectionItem[] }) => {
-  setReservationData((prev) => ({
-    ...prev,
-    step3: data,
-  }));
-  console.log("Step 3 data submitted:", data);
-  setCurrentStep(4);
-};
-
-
-
-  useEffect(() => {
-    setCurrentStep(parseInt(stepParam, 10));
-  }, [stepParam]);
+  const handleStep3Submit = (data: { addOns: SelectionItem[] }) => {
+    setReservationData((prev) => ({
+      ...prev,
+      step3: data,
+    }));
+    console.log("Step 3 data submitted:", data);
+    setCurrentStep(4);
+  };
 
   const steps = [
     "Create Package",
@@ -102,14 +120,6 @@ const handleStep3Submit = (data: { addOns: SelectionItem[] }) => {
     "Add-ons",
     "Deposit Payment",
     "Confirmation",
-  ];
-
-  const stepUrls = [
-    "/reserve?step=1", // Step 1
-    `/reserve?step=2&id=${packageId || ""}`, // Step 2
-    `/reserve?step=3&id=${packageId || ""}`, // Step 3
-    `/reserve?step=4&id=${packageId || ""}`, // Step 4
-    `/reserve?step=5&id=${packageId || ""}`, // Step 5
   ];
 
   return (
@@ -129,21 +139,30 @@ const handleStep3Submit = (data: { addOns: SelectionItem[] }) => {
         <StepTracker
           currentStep={currentStep}
           steps={steps}
-          stepUrls={stepUrls}
+          onStepClick={(step) => setCurrentStep(step)} // 👈 simple callback
         />
 
         {/* Step Content */}
         {currentStep === 1 ? (
-          <ReserveStep1Content
+          <Step1
             data={reservationData.step1}
             onSubmit={handleStep1Submit}
           />
         ) : currentStep === 2 ? (
-          <ReserveStep2Content data={reservationData.step2} onSubmit={handleStep2Submit} />
+          <ReserveStep2Content
+            data={reservationData.step2}
+            onSubmit={handleStep2Submit}
+          />
         ) : currentStep === 3 ? (
-          <ReserveStep3Content data={reservationData.step3} onSubmit={handleStep3Submit}/>
+          <ReserveStep3Content
+            data={reservationData.step3}
+            onSubmit={handleStep3Submit}
+          />
         ) : currentStep === 4 ? (
-          <ReserveStep4Content data={reservationData} onConfirm={() => setCurrentStep(5)} />
+          <ReserveStep4Content
+            data={reservationData}
+            onConfirm={() => setCurrentStep(5)}
+          />
         ) : currentStep === 5 ? (
           <ReserveStep5Content packageId={packageId!} />
         ) : (

@@ -47,14 +47,26 @@ model WorkCategory {
   @@id([workId, categoryId])
 }
 
-model Item {
+model ItemCategory {
   id        Int      @id @default(autoincrement())
-  key       String   @unique
-  name      String
-  basePrice Float
-  unit      String?
+  name      String   @unique
+  items     Item[]   // relation to Item
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Item {
+  id               Int              @id @default(autoincrement())
+  key              String           @unique
+  name             String
+  basePrice        Float
+  unit             String?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  // new relation 👇
+  categoryId       Int?
+  category         ItemCategory?    @relation(fields: [categoryId], references: [id])
 
   workItems        WorkItem[]
   WorkOptionalItem WorkOptionalItem[]
@@ -82,6 +94,7 @@ model Reservation {
   id             Int               @id @default(autoincrement())
   workId         Int
   work           Work              @relation(fields: [workId], references: [id])
+  userId         String?
   customerName   String?
   customerEmail  String?
   customerPhone  String?

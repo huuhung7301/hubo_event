@@ -1,16 +1,12 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-
 interface StepTrackerProps {
   currentStep: number; // e.g. 1–5
   steps: string[]; // step labels
-  stepUrls: string[]; // URLs for each step
+  onStepClick: (stepIndex: number) => void; // callback for clicking step
 }
 
-export default function StepTracker({ currentStep, steps, stepUrls }: StepTrackerProps) {
-  const router = useRouter();
-
+export default function StepTracker({ currentStep, steps, onStepClick }: StepTrackerProps) {
   return (
     <div className="flex items-center justify-between w-full max-w-3xl mx-auto my-6">
       {steps.map((step, index) => {
@@ -21,12 +17,7 @@ export default function StepTracker({ currentStep, steps, stepUrls }: StepTracke
           <div key={index} className="flex-1 relative">
             {/* Step label */}
             <div
-              onClick={() => {
-                const url = stepUrls[index];
-                if (typeof url === "string") {
-                  router.push(url);
-                }
-              }}
+              onClick={() => onStepClick(index + 1)} // 👈 directly trigger step change
               className={`text-center text-sm cursor-pointer transition-colors ${
                 isActive
                   ? "text-blue-600 font-semibold"

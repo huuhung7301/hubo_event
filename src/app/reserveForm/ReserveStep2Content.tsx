@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DayPicker } from "react-day-picker";
 import "react-day-picker/dist/style.css";
 
@@ -23,6 +23,8 @@ const availabilityData: { [date: string]: "medium" | "low" | "full" } = {
 
 export default function ReserveStep2Content({ data, onSubmit }: ReserveStep2ContentProps) {
   const [loading, setLoading] = useState(false);
+  const [tempData, setTempData] = useState<Step2Data>(data);
+  const [checked, setChecked] = useState(false);
 
   const modifiers = {
     medium: Object.keys(availabilityData)
@@ -40,29 +42,46 @@ export default function ReserveStep2Content({ data, onSubmit }: ReserveStep2Cont
     medium: "bg-yellow-200 focus:outline-none focus:ring-0",
     low: "bg-orange-200 focus:outline-none focus:ring-0",
     full: "bg-red-200 focus:outline-none focus:ring-0",
-    selected: "border-b-3 border-slate-700 font-semibold text-black focus:outline-none focus:ring-0",
+    selected:
+      "border-b-3 border-slate-700 font-semibold text-black focus:outline-none focus:ring-0",
     today: "focus:outline-none focus:ring-0",
+  };
+
+  // ✅ Fix 1: local date format, avoid UTC shift
+  const formatLocalDate = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
   };
 
   const handleSelectDate = (date: Date | undefined) => {
     if (!date) return;
-    const dateStr = date.toISOString().split("T")[0];
+    const dateStr = formatLocalDate(date);
     if (!dateStr) return;
     if (availabilityData[dateStr] === "full") return; // cannot select fully booked
-    onSubmit({ ...data, date: dateStr });
+    setTempData((prev) => ({ ...prev, date: dateStr }));
   };
 
-  const checkAvailability = async () => {
-    if (!data.date || !data.postcode) return;
-    setLoading(true);
-    await new Promise((r) => setTimeout(r, 500));
+  // ✅ Fix 2: only run check if postcode is exactly 4 digits
+  useEffect(() => {
+    const autoCheck = async () => {
+      if (!tempData.date || tempData.postcode.length !== 4) return;
+      setLoading(true);
+      setChecked(false);
 
-    const postcodeNum = parseInt(data.postcode);
-    const fee = postcodeNum >= 2000 && postcodeNum <= 2100 ? 50 : 80;
+      await new Promise((r) => setTimeout(r, 500)); // simulate API call
 
-    setLoading(false);
-    onSubmit({ ...data, deliveryFee: fee });
-  };
+      const postcodeNum = parseInt(tempData.postcode);
+      const fee = postcodeNum >= 2000 && postcodeNum <= 2100 ? 50 : 80;
+
+      setLoading(false);
+      setTempData((prev) => ({ ...prev, deliveryFee: fee }));
+      setChecked(true);
+    };
+
+    autoCheck();
+  }, [tempData.date, tempData.postcode]);
 
   return (
     <div className="space-y-4">
@@ -71,7 +90,7 @@ export default function ReserveStep2Content({ data, onSubmit }: ReserveStep2Cont
         <label className="mb-2 block text-sm font-medium">Select Event Date</label>
         <DayPicker
           mode="single"
-          selected={data.date ? new Date(data.date) : undefined}
+          selected={tempData.date ? new Date(tempData.date) : undefined}
           onSelect={handleSelectDate}
           modifiers={modifiers}
           modifiersClassNames={modifiersClassNames}
@@ -87,32 +106,42 @@ export default function ReserveStep2Content({ data, onSubmit }: ReserveStep2Cont
         <input
           type="text"
           name="postcode"
-          value={data.postcode || ""}
-          onChange={(e) => onSubmit({ ...data, postcode: e.target.value })}
+          value={tempData.postcode || ""}
+          onChange={(e) =>
+            setTempData((prev) => ({ ...prev, postcode: e.target.value.replace(/\D/g, "") }))
+          }
           placeholder="2000"
           required
+          maxLength={4}
           className="w-full rounded-lg border border-gray-300 p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
         />
       </div>
 
-      {/* Check Availability Button */}
-      <button
-        onClick={checkAvailability}
-        disabled={loading || !data.date || !data.postcode}
-        className="w-full rounded-lg bg-blue-600 py-2 font-medium text-white transition-colors hover:bg-blue-700 disabled:opacity-60"
-      >
-        {loading ? "Checking..." : "Check Availability"}
-      </button>
-
       {/* Availability Info */}
-      {data.deliveryFee !== undefined && (
+      {loading && (
+        <div className="text-sm text-gray-600">Checking availability...</div>
+      )}
+
+      {!loading && checked && tempData.deliveryFee !== undefined && (
         <div className="mt-4 rounded-lg border bg-gray-50 p-4">
-          <p className="font-medium text-green-600">✅ Available on {data.date}</p>
+          <p className="font-medium text-green-600">
+            ✅ Available on {tempData.date}
+          </p>
           <p className="mt-2 text-gray-700">
-            Delivery & setup fee: <span className="font-semibold">${data.deliveryFee}</span>
+            Delivery & setup fee:{" "}
+            <span className="font-semibold">${tempData.deliveryFee}</span>
           </p>
         </div>
       )}
+
+      {/* Confirm Button */}
+      <button
+        onClick={() => onSubmit(tempData)}
+        disabled={!checked || loading || !tempData.deliveryFee}
+        className="w-full rounded-lg bg-blue-600 py-2 font-medium text-white transition-colors hover:bg-blue-700 disabled:opacity-60"
+      >
+        Choose This Date
+      </button>
     </div>
   );
 }
