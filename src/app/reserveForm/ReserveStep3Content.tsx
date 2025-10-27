@@ -187,7 +187,7 @@ export default function ReserveStep3Content({
     categoryItems: SelectionItem[];
     category: string;
   }) => {
-    if (!scrollRefs.current[category]) scrollRefs.current[category] = null;
+    scrollRefs.current[category] ??= null;
     const rows = categoryItems.length < 6 ? 1 : 2; // Single row if <6 items
 
     return (
@@ -216,7 +216,7 @@ export default function ReserveStep3Content({
   const categories = Array.from(
     new Set(addOns.map((a) => a.category ?? "Other")),
   );
-  const categorizedItems: { [key: string]: SelectionItem[] } = {};
+  const categorizedItems: Record<string, SelectionItem[]> = {};
   categories.forEach((cat) => {
     categorizedItems[cat] = addOns.filter((a) => a.category === cat);
   });

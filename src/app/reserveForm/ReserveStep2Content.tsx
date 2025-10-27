@@ -21,7 +21,10 @@ const availabilityData: Record<string, "medium" | "low" | "full"> = {
   "2025-10-12": "low",
 };
 
-export default function ReserveStep2Content({ data, onSubmit }: ReserveStep2ContentProps) {
+export default function ReserveStep2Content({
+  data,
+  onSubmit,
+}: ReserveStep2ContentProps) {
   const [loading, setLoading] = useState(false);
   const [tempData, setTempData] = useState<Step2Data>(data);
   const [checked, setChecked] = useState(false);
@@ -66,28 +69,35 @@ export default function ReserveStep2Content({ data, onSubmit }: ReserveStep2Cont
   // ✅ Fix 2: only run check if postcode is exactly 4 digits
   useEffect(() => {
     const autoCheck = async () => {
-      if (!tempData.date || tempData.postcode.length !== 4) return;
-      setLoading(true);
-      setChecked(false);
+      try {
+        if (!tempData.date || tempData.postcode.length !== 4) return;
+        setLoading(true);
+        setChecked(false);
 
-      await new Promise((r) => setTimeout(r, 500)); // simulate API call
+        await new Promise((r) => setTimeout(r, 500));
 
-      const postcodeNum = parseInt(tempData.postcode);
-      const fee = postcodeNum >= 2000 && postcodeNum <= 2100 ? 50 : 80;
+        const postcodeNum = parseInt(tempData.postcode);
+        const fee = postcodeNum >= 2000 && postcodeNum <= 2100 ? 50 : 80;
 
-      setLoading(false);
-      setTempData((prev) => ({ ...prev, deliveryFee: fee }));
-      setChecked(true);
+        setTempData((prev) => ({ ...prev, deliveryFee: fee }));
+        setChecked(true);
+      } catch (error) {
+        console.error("autoCheck failed:", error);
+      } finally {
+        setLoading(false);
+      }
     };
 
-    autoCheck();
+    autoCheck().catch((err) => console.error(err)); // ✅ handled promise
   }, [tempData.date, tempData.postcode]);
 
   return (
     <div className="space-y-4">
       {/* Calendar */}
       <div>
-        <label className="mb-2 block text-sm font-medium">Select Event Date</label>
+        <label className="mb-2 block text-sm font-medium">
+          Select Event Date
+        </label>
         <DayPicker
           mode="single"
           selected={tempData.date ? new Date(tempData.date) : undefined}
@@ -108,7 +118,10 @@ export default function ReserveStep2Content({ data, onSubmit }: ReserveStep2Cont
           name="postcode"
           value={tempData.postcode || ""}
           onChange={(e) =>
-            setTempData((prev) => ({ ...prev, postcode: e.target.value.replace(/\D/g, "") }))
+            setTempData((prev) => ({
+              ...prev,
+              postcode: e.target.value.replace(/\D/g, ""),
+            }))
           }
           placeholder="2000"
           required
