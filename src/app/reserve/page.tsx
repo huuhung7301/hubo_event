@@ -58,7 +58,7 @@ export default function ReservePage() {
       deliveryFee: undefined as number | undefined,
     },
     step3: {
-      addOns: [] as any[],
+      addOns: [] as SelectionItem[],
     },
   });
 
@@ -97,8 +97,7 @@ export default function ReservePage() {
       step2: {
         date: data.date,
         postcode: data.postcode,
-        deliveryFee:
-          data.deliveryFee !== undefined ? data.deliveryFee : undefined,
+        deliveryFee: data.deliveryFee ?? undefined,
       },
     }));
     console.log("Step 2 data submitted:", data);
@@ -144,10 +143,7 @@ export default function ReservePage() {
 
         {/* Step Content */}
         {currentStep === 1 ? (
-          <Step1
-            data={reservationData.step1}
-            onSubmit={handleStep1Submit}
-          />
+          <Step1 data={reservationData.step1} onSubmit={handleStep1Submit} />
         ) : currentStep === 2 ? (
           <ReserveStep2Content
             data={reservationData.step2}
