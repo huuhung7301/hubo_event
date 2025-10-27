@@ -34,7 +34,7 @@ export default function MobileOverlay({
   const [items, setItems] = useState(coreItems);
 
   const router = useRouter();
-  const { isSignedIn } = useUser();
+  const { isSignedIn, user } = useUser();
   const { openSignIn } = useClerk();
 
   const createReservation = api.reservation.createReservation.useMutation({
@@ -63,14 +63,15 @@ export default function MobileOverlay({
 
   const handleReserve = async () => {
     if (!isSignedIn) {
-      // User not signed in — open Clerk modal
+      // 🧭 Not signed in — open Clerk modal
       openSignIn({ redirectUrl: window.location.href });
       return;
     }
 
     try {
-      // User is signed in — create reservation
+      // 🧠 Create reservation with userId from Clerk
       const reservation = await createReservation.mutateAsync({
+        userId: user.id, // ✅ add this line (convert from string if your schema uses Int)
         workId,
         notes,
         items: items.map((i) => ({
@@ -85,8 +86,8 @@ export default function MobileOverlay({
         })),
       });
 
-      // ✅ After success, redirect to step 2 with reservation ID
-      router.push(`/reserve?step=2&id=${reservation.id}`);
+      // ✅ Redirect to step 2
+      router.push(`/reserve?id=${reservation.id}`);
       onClose();
     } catch (err) {
       console.error(err);
