@@ -40,7 +40,7 @@ export default function MobileOverlay({
   const createReservation = api.reservation.createReservation.useMutation({
     onSuccess: (data) => {
       // ✅ After successful reservation, redirect to step 2
-      router.push(`/reserve/step2?id=${data.id}`);
+      router.push(`/reserve?id=${data.id}`);
       onClose();
     },
     onError: (err) => {
