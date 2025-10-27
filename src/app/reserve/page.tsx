@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect } from "react";
 import StepTracker from "../reserveForm/StepTracker";
 import ReserveStep1Content from "../reserveForm/ReserveStep1Content";
 import ReserveStep2Content from "../reserveForm/ReserveStep2Content";
@@ -122,53 +122,51 @@ export default function ReservePage() {
   ];
 
   return (
-    <Suspense>
-      <div
-        className="relative flex min-h-screen items-center justify-center px-4 py-12"
-        style={{
-          backgroundImage:
-            "url('neutral-abstract-texture-simple-background.jpg')",
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-        }}
-      >
-        <div className="absolute inset-0 bg-white/0"></div>
+    <div
+      className="relative flex min-h-screen items-center justify-center px-4 py-12"
+      style={{
+        backgroundImage:
+          "url('neutral-abstract-texture-simple-background.jpg')",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+      }}
+    >
+      <div className="absolute inset-0 bg-white/0"></div>
 
-        <div className="relative w-full max-w-lg rounded-2xl bg-white p-8 shadow-md">
-          {/* Step Tracker */}
-          <StepTracker
-            currentStep={currentStep}
-            steps={steps}
-            onStepClick={(step) => setCurrentStep(step)} // 👈 simple callback
+      <div className="relative w-full max-w-lg rounded-2xl bg-white p-8 shadow-md">
+        {/* Step Tracker */}
+        <StepTracker
+          currentStep={currentStep}
+          steps={steps}
+          onStepClick={(step) => setCurrentStep(step)} // 👈 simple callback
+        />
+
+        {/* Step Content */}
+        {currentStep === 1 ? (
+          <Step1 data={reservationData.step1} onSubmit={handleStep1Submit} />
+        ) : currentStep === 2 ? (
+          <ReserveStep2Content
+            data={reservationData.step2}
+            onSubmit={handleStep2Submit}
           />
-
-          {/* Step Content */}
-          {currentStep === 1 ? (
-            <Step1 data={reservationData.step1} onSubmit={handleStep1Submit} />
-          ) : currentStep === 2 ? (
-            <ReserveStep2Content
-              data={reservationData.step2}
-              onSubmit={handleStep2Submit}
-            />
-          ) : currentStep === 3 ? (
-            <ReserveStep3Content
-              data={reservationData.step3}
-              onSubmit={handleStep3Submit}
-            />
-          ) : currentStep === 4 ? (
-            <ReserveStep4Content
-              data={reservationData}
-              onConfirm={() => setCurrentStep(5)}
-            />
-          ) : currentStep === 5 ? (
-            <ReserveStep5Content packageId={packageId!} />
-          ) : (
-            <p className="mt-10 text-center text-gray-500">
-              Step {currentStep} content not implemented yet.
-            </p>
-          )}
-        </div>
+        ) : currentStep === 3 ? (
+          <ReserveStep3Content
+            data={reservationData.step3}
+            onSubmit={handleStep3Submit}
+          />
+        ) : currentStep === 4 ? (
+          <ReserveStep4Content
+            data={reservationData}
+            onConfirm={() => setCurrentStep(5)}
+          />
+        ) : currentStep === 5 ? (
+          <ReserveStep5Content packageId={packageId!} />
+        ) : (
+          <p className="mt-10 text-center text-gray-500">
+            Step {currentStep} content not implemented yet.
+          </p>
+        )}
       </div>
-    </Suspense>
+    </div>
   );
 }
