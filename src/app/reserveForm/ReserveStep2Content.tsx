@@ -3,12 +3,7 @@
 import { useState, useEffect } from "react";
 import { DayPicker } from "react-day-picker";
 import "react-day-picker/dist/style.css";
-
-interface Step2Data {
-  date: string;
-  postcode: string;
-  deliveryFee?: number;
-}
+import type { Step2Data } from "../reserve/page";
 
 interface ReserveStep2ContentProps {
   data: Step2Data;

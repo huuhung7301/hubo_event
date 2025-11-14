@@ -97,18 +97,23 @@ model Reservation {
   userId         String?
   customerName   String?
   customerEmail  String?
-  customerPhone  String?
+  customerPhone  String?            // customer’s contact number
+  phoneNumber    String?            // phone number for the person onsite
   notes          String?
   totalPrice     Float             @default(0)
   status         ReservationStatus @default(PENDING)
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
-
-  // 🧩 JSON fields to store selected items
-  items          Json?              // required
-  optionalItems  Json?             // optional
+  
+  reservationDate DateTime?
+  setupTime       String?
+  address         String?
+  suburb          String?
+  postcode        String?           // ← added
+  items           Json?
+  optionalItems   Json?
+  extra           Json?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
 }
-
 
 enum ReservationStatus {
   PENDING

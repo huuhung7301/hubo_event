@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import type { SelectionItem } from "../_components/selectionCard";
 import SelectionCardComponent from "../_components/selectionCard";
+import type { Step1Data } from "../reserve/page";
 
 const SelectionCard = React.memo(SelectionCardComponent);
 
@@ -49,18 +50,8 @@ export const ScrollGrid = React.memo(ScrollGridComponent);
 
 
 interface ReserveStep1ContentProps {
-  data: {
-    backdrop?: SelectionItem;
-    decorations: SelectionItem[];
-    theme?: SelectionItem;
-    message: string;
-  };
-  onSubmit: (data: {
-    backdrop?: SelectionItem;
-    decorations: SelectionItem[];
-    theme?: SelectionItem;
-    message: string;
-  }) => void;
+  data: Step1Data;
+  onSubmit: (data: Step1Data) => void;
 }
 
 
