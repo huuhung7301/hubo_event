@@ -149,21 +149,39 @@ export default function MobileOverlay({
                         (${item.price})
                       </span>
                     </span>
-                    <input
-                      type="number"
-                      min="0"
-                      inputMode="none"
-                      value={item.quantity}
-                      onChange={(e) =>
-                        handleQuantityChange(
-                          index,
-                          Number(e.target.value),
-                          items,
-                          setItems,
-                        )
-                      }
-                      className="mt-1 w-20 rounded border p-1 text-center text-sm"
-                    />
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleQuantityChange(
+                            index,
+                            item.quantity - 1,
+                            items,
+                            setItems,
+                          )
+                        }
+                        className="rounded border px-2 py-1"
+                      >
+                        -
+                      </button>
+
+                      <span className="w-10 text-center">{item.quantity}</span>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleQuantityChange(
+                            index,
+                            item.quantity + 1,
+                            items,
+                            setItems,
+                          )
+                        }
+                        className="rounded border px-2 py-1"
+                      >
+                        +
+                      </button>
+                    </div>
                   </div>
                   <span className="font-medium text-gray-900">
                     ${(item.price * item.quantity).toFixed(2)}
