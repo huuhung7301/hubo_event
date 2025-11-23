@@ -61,6 +61,7 @@ model Item {
   name             String
   basePrice        Float
   unit             String?
+  imageUrl         String?          // ✅ required for your UI
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
 

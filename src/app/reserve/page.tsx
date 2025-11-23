@@ -31,6 +31,9 @@ export interface Step2Data {
   date: string;
   postcode: string;
   deliveryFee?: number;
+  customerName?: string;
+  customerEmail?: string;
+  customerPhone?: string;
 }
 
 // Step 3: Add-ons
@@ -93,6 +96,9 @@ export default function ReservePage() {
     date: "",
     postcode: "",
     deliveryFee: undefined,
+    customerName: "",
+    customerEmail: "",
+    customerPhone: "",
   });
 
   const handleStep2Submit = (data: Step2Data) => {
@@ -100,6 +106,9 @@ export default function ReservePage() {
       date: data.date,
       postcode: data.postcode,
       deliveryFee: data.deliveryFee ?? undefined,
+      customerName: data.customerName ?? "",
+      customerEmail: data.customerEmail ?? "",
+      customerPhone: data.customerPhone ?? "",
     });
     setCurrentStep(3);
   };
@@ -182,6 +191,7 @@ export default function ReservePage() {
           <ReserveStep3Content data={step3Data} onSubmit={handleStep3Submit} />
         ) : currentStep === 4 ? (
           <ReserveStep4Content
+            reservationId={packageId ? Number(packageId) : undefined}
             existingStep1Data={
               reservation
                 ? {

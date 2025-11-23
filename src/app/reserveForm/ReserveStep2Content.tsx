@@ -142,10 +142,76 @@ export default function ReserveStep2Content({
         </div>
       )}
 
+      {/* Customer Details */}
+      <div className="space-y-3">
+        <h3 className="text-md border-b pb-1 font-semibold text-gray-700">
+          Customer Details
+        </h3>
+
+        {/* Name */}
+        <div>
+          <label className="mb-1 block text-sm font-medium">Full Name</label>
+          <input
+            type="text"
+            value={tempData.customerName || ""}
+            onChange={(e) =>
+              setTempData((prev) => ({ ...prev, customerName: e.target.value }))
+            }
+            placeholder="John Doe"
+            className="w-full rounded-lg border border-gray-300 p-2"
+            required
+          />
+        </div>
+
+        {/* Email */}
+        <div>
+          <label className="mb-1 block text-sm font-medium">Email</label>
+          <input
+            type="email"
+            value={tempData.customerEmail || ""}
+            onChange={(e) =>
+              setTempData((prev) => ({
+                ...prev,
+                customerEmail: e.target.value,
+              }))
+            }
+            placeholder="email@example.com"
+            className="w-full rounded-lg border border-gray-300 p-2"
+            required
+          />
+        </div>
+
+        {/* Phone */}
+        <div>
+          <label className="mb-1 block text-sm font-medium">Phone</label>
+          <input
+            type="tel"
+            value={tempData.customerPhone || ""}
+            onChange={(e) =>
+              setTempData((prev) => ({
+                ...prev,
+                customerPhone: e.target.value.replace(/\D/g, ""),
+              }))
+            }
+            maxLength={10}
+            placeholder="04xxxxxxxx"
+            className="w-full rounded-lg border border-gray-300 p-2"
+            required
+          />
+        </div>
+      </div>
+
       {/* Confirm Button */}
       <button
         onClick={() => onSubmit(tempData)}
-        disabled={!checked || loading || !tempData.deliveryFee}
+        disabled={
+          !checked ||
+          loading ||
+          !tempData.deliveryFee ||
+          !tempData.customerName ||
+          !tempData.customerEmail ||
+          !tempData.customerPhone
+        }
         className="w-full rounded-lg bg-blue-600 py-2 font-medium text-white transition-colors hover:bg-blue-700 disabled:opacity-60"
       >
         Choose This Date
