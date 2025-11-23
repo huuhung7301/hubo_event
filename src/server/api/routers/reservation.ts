@@ -1,5 +1,39 @@
 import { z } from "zod";
 import { createTRPCRouter, publicProcedure } from "../trpc";
+const updateReservationSchema = z.object({
+  id: z.number(),
+  workId: z.number().optional(),
+  userId: z.string().optional(),
+  customerName: z.string().optional(),
+  customerEmail: z.string().optional(),
+  customerPhone: z.string().optional(),
+  phoneNumber: z.string().optional(),
+  notes: z.string().optional(),
+  reservationDate: z.string().datetime().optional(),
+  setupTime: z.string().optional(),
+  address: z.string().optional(),
+  suburb: z.string().optional(),
+  postcode: z.string().optional(),
+  items: z.array(
+    z.object({
+      key: z.string(),
+      quantity: z.number().default(1),
+      priceAtBooking: z.number(),
+    })
+  ).optional(),
+  optionalItems: z.array(
+    z.object({
+      key: z.string(),
+      quantity: z.number().default(1),
+      priceAtBooking: z.number(),
+    })
+  ).optional(),
+  extra: z.any().optional(),
+  status: z.enum(["PENDING", "CONFIRMED", "CANCELLED"]).optional(),
+  totalPrice: z.number().optional(),
+});
+
+type UpdateReservationInput = z.infer<typeof updateReservationSchema>;
 
 export const reservationRouter = createTRPCRouter({
   // 🧩 Create a new reservation
@@ -81,55 +115,20 @@ export const reservationRouter = createTRPCRouter({
     }),
 
   updateReservation: publicProcedure
-  .input(
-    z.object({
-      id: z.number(),
-      workId: z.number().optional(),
-      userId: z.string().optional(),
-      customerName: z.string().optional(),
-      customerEmail: z.string().optional(),
-      customerPhone: z.string().optional(),
-      phoneNumber: z.string().optional(),
-      notes: z.string().optional(),
-      reservationDate: z.string().datetime().optional(),
-      setupTime: z.string().optional(),
-      address: z.string().optional(),
-      suburb: z.string().optional(),
-      postcode: z.string().optional(),
-      items: z.array(
-        z.object({
-          key: z.string(),
-          quantity: z.number().default(1),
-          priceAtBooking: z.number(),
-        })
-      ).optional(),
-      optionalItems: z.array(
-        z.object({
-          key: z.string(),
-          quantity: z.number().default(1),
-          priceAtBooking: z.number(),
-        })
-      ).optional(),
-      extra: z.any().optional(),
-      status: z.enum(["PENDING", "CONFIRMED", "CANCELLED"]).optional(),
-      totalPrice: z.number().optional(),
-    })
-  )
-  .mutation(async ({ ctx, input }) => {
-    const dataToUpdate: any = {
-      ...input,
-      reservationDate: input.reservationDate
-        ? new Date(input.reservationDate)
-        : undefined,
-    };
+    .input(updateReservationSchema)
+    .mutation(async ({ ctx, input }) => {
+      const { id, ...rest } = input;
 
-    delete dataToUpdate.id;
+      const dataToUpdate: Partial<Omit<UpdateReservationInput, "id">> = {
+        ...rest,
+        reservationDate: rest.reservationDate
+          ? new Date(rest.reservationDate).toISOString()
+          : undefined,
+      };
 
-    const updatedReservation = await ctx.db.reservation.update({
-      where: { id: input.id },
-      data: dataToUpdate,
-    });
-
-    return updatedReservation;
-  }),
+      return ctx.db.reservation.update({
+        where: { id },
+        data: dataToUpdate,
+      });
+    }),
 });

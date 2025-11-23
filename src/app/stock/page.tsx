@@ -24,7 +24,7 @@ export default function AdminStockPage() {
   const categoriesQuery = api.stock.getCategories.useQuery();
 
   // 1. Fetch ALL items without any filtering parameters.
-  const allItemsQuery = api.stock.getAll.useQuery({}); 
+  const allItemsQuery = api.stock.getAll.useQuery({});
   const allItems = allItemsQuery.data; // The full, unfiltered list
 
   // Local state for filtering
@@ -122,13 +122,13 @@ export default function AdminStockPage() {
     }
 
     setEditingItem(null);
-    allItemsQuery.refetch(); // Refetch all items after mutation
+    await allItemsQuery.refetch(); // Refetch all items after mutation
   };
 
   const handleDelete = async (id: number) => {
     if (!confirm("Delete this item?")) return;
     await deleteItem.mutateAsync({ id });
-    allItemsQuery.refetch(); // Refetch all items after mutation
+    await allItemsQuery.refetch(); // Refetch all items after mutation
   };
 
   // Helper: File → Base64 (unchanged)
@@ -136,8 +136,9 @@ export default function AdminStockPage() {
     new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.readAsDataURL(file);
+
       reader.onload = () => resolve(reader.result as string);
-      reader.onerror = (error) => reject(error);
+      reader.onerror = () => reject(new Error("Failed to read file as Base64"));
     });
 
   // 2. Local Filtering Logic (The FIX)
@@ -159,9 +160,7 @@ export default function AdminStockPage() {
     // Filter by Category
     if (filterCategory !== "") {
       const categoryId = Number(filterCategory);
-      tempItems = tempItems.filter(
-        (item) => item.categoryId === categoryId,
-      );
+      tempItems = tempItems.filter((item) => item.categoryId === categoryId);
     }
 
     return tempItems;
@@ -307,7 +306,7 @@ export default function AdminStockPage() {
                 <p className="font-medium">{item.name}</p>
                 <p className="text-sm text-gray-500">
                   Key: {item.key} | Price: ${item.basePrice} | Unit:{" "}
-                  {item.unit || "-"} | Category: {item.category?.name || "-"}
+                  {item.unit ?? "-"} | Category: {item.category?.name ?? "-"}
                 </p>
               </div>
             </div>
@@ -329,7 +328,9 @@ export default function AdminStockPage() {
             </div>
           </div>
         ))}
-        {filteredItems.length === 0 && !allItemsQuery.isLoading && <p className="text-gray-500">No items match your filter criteria.</p>}
+        {filteredItems.length === 0 && !allItemsQuery.isLoading && (
+          <p className="text-gray-500">No items match your filter criteria.</p>
+        )}
       </div>
     </div>
   );

@@ -153,7 +153,7 @@ export default function ReserveStep2Content({
           <label className="mb-1 block text-sm font-medium">Full Name</label>
           <input
             type="text"
-            value={tempData.customerName || ""}
+            value={tempData.customerName ?? ""}
             onChange={(e) =>
               setTempData((prev) => ({ ...prev, customerName: e.target.value }))
             }
@@ -168,7 +168,7 @@ export default function ReserveStep2Content({
           <label className="mb-1 block text-sm font-medium">Email</label>
           <input
             type="email"
-            value={tempData.customerEmail || ""}
+            value={tempData.customerEmail ?? ""}
             onChange={(e) =>
               setTempData((prev) => ({
                 ...prev,
@@ -186,7 +186,7 @@ export default function ReserveStep2Content({
           <label className="mb-1 block text-sm font-medium">Phone</label>
           <input
             type="tel"
-            value={tempData.customerPhone || ""}
+            value={tempData.customerPhone ?? ""}
             onChange={(e) =>
               setTempData((prev) => ({
                 ...prev,
