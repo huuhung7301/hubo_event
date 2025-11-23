@@ -133,7 +133,7 @@ const App: React.FC = () => {
       id: work.id,
       title: work.title,
       imageUrl: work.imageUrl,
-      notes: work.notes || "",
+      notes: work.notes ?? "",
       categoryIds: work.categoryIds,
       requiredItems: work.requiredItemData,
       optionalItems: work.optionalItemData,

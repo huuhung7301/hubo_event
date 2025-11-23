@@ -32,7 +32,7 @@ export const WorkModal: React.FC<WorkModalProps> = ({
   onClose,
 }) => {
   const initialFormData = useMemo(() => {
-    return work || newWorkInitialState;
+    return work ?? newWorkInitialState;
   }, [work]);
 
   const [formData, setFormData] = useState<WorkInputDTO>(initialFormData);
@@ -67,11 +67,21 @@ export const WorkModal: React.FC<WorkModalProps> = ({
   const toBase64 = (file: File) =>
     new Promise<string>((resolve, reject) => {
       const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = (error) => reject(error);
-    });
 
+      reader.onload = () => {
+        if (!reader.result) {
+          reject(new Error("Failed to convert file to Base64"));
+          return;
+        }
+        resolve(reader.result as string);
+      };
+
+      reader.onerror = () => {
+        reject(new Error("Error reading file"));
+      };
+
+      reader.readAsDataURL(file);
+    });
   // ---- General field updates ----
   const handleInputChange = useCallback(
     (
@@ -79,11 +89,11 @@ export const WorkModal: React.FC<WorkModalProps> = ({
         WorkInputDTO,
         "id" | "requiredItems" | "optionalItems" | "categoryIds"
       >,
-      value: string
+      value: string,
     ) => {
       setFormData((prev) => ({ ...prev, [field]: value }));
     },
-    []
+    [],
   );
 
   // ---- Category toggle ----
@@ -111,7 +121,7 @@ export const WorkModal: React.FC<WorkModalProps> = ({
       setFormData((prev) => ({
         ...prev,
         [field]: prev[field].map((item, i) =>
-          i === index ? { ...item, quantity: Math.max(1, quantity) } : item
+          i === index ? { ...item, quantity: Math.max(1, quantity) } : item,
         ),
       }));
     },
@@ -142,23 +152,23 @@ export const WorkModal: React.FC<WorkModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-40 flex justify-center items-start pt-10 pb-10">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl mx-4 transition-all transform duration-300">
-        <div className="p-6 border-b flex justify-between items-center bg-white z-10 rounded-t-xl">
+    <div className="bg-opacity-40 fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black pt-10 pb-10">
+      <div className="mx-4 w-full max-w-4xl transform rounded-xl bg-white shadow-2xl transition-all duration-300">
+        <div className="z-10 flex items-center justify-between rounded-t-xl border-b bg-white p-6">
           <h3 className="text-2xl font-bold text-gray-800">
             {formData.id ? "Edit Work" : "Create New Work"}
           </h3>
           <button
             onClick={onClose}
-            className="p-2 rounded-full hover:bg-gray-100 transition"
+            className="rounded-full p-2 transition hover:bg-gray-100"
           >
             <X size={24} className="text-gray-500" />
           </button>
         </div>
 
-        <form onSubmit={handleSave} className="p-6 space-y-6">
+        <form onSubmit={handleSave} className="space-y-6 p-6">
           {/* Title & Notes */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div className="space-y-1">
               <label className="block text-sm font-medium text-gray-700">
                 Title <span className="text-red-500">*</span>
@@ -182,11 +192,11 @@ export const WorkModal: React.FC<WorkModalProps> = ({
                   <img
                     src={formData.imageUrl}
                     alt="preview"
-                    className="w-full h-40 object-cover rounded-lg shadow"
+                    className="h-40 w-full rounded-lg object-cover shadow"
                   />
                 )}
 
-                <label className="cursor-pointer bg-indigo-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 justify-center hover:bg-indigo-700 transition">
+                <label className="flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-white transition hover:bg-indigo-700">
                   <Upload size={18} />
                   {uploading ? "Uploading..." : "Upload Image"}
                   <input
@@ -194,7 +204,9 @@ export const WorkModal: React.FC<WorkModalProps> = ({
                     accept="image/*"
                     className="hidden"
                     disabled={uploading}
-                    onChange={(e) => handleImageUpload(e.target.files?.[0] ?? null)}
+                    onChange={(e) =>
+                      handleImageUpload(e.target.files?.[0] ?? null)
+                    }
                   />
                 </label>
               </div>
@@ -216,19 +228,19 @@ export const WorkModal: React.FC<WorkModalProps> = ({
 
           {/* Categories */}
           <div>
-            <h3 className="text-lg font-semibold mb-3 text-indigo-700">
+            <h3 className="mb-3 text-lg font-semibold text-indigo-700">
               Categories (WorkCategory)
             </h3>
-            <div className="flex flex-wrap gap-3 p-3 border rounded-lg bg-gray-50">
+            <div className="flex flex-wrap gap-3 rounded-lg border bg-gray-50 p-3">
               {categories.map((c) => (
                 <button
                   key={c.id}
                   type="button"
                   onClick={() => handleCategoryToggle(c.id)}
-                  className={`px-4 py-2 rounded-full text-sm transition ${
+                  className={`rounded-full px-4 py-2 text-sm transition ${
                     formData.categoryIds.includes(c.id)
                       ? "bg-indigo-600 text-white"
-                      : "bg-white text-gray-700 border border-gray-300 hover:bg-indigo-50"
+                      : "border border-gray-300 bg-white text-gray-700 hover:bg-indigo-50"
                   }`}
                 >
                   {c.name}
@@ -238,7 +250,7 @@ export const WorkModal: React.FC<WorkModalProps> = ({
           </div>
 
           {/* Required + Optional Items */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <ItemListManager
               title="Required Items (WorkItem)"
               items={formData.requiredItems}
@@ -256,7 +268,7 @@ export const WorkModal: React.FC<WorkModalProps> = ({
           </div>
 
           {/* Footer */}
-          <div className="flex justify-end gap-3 pt-4 border-t">
+          <div className="flex justify-end gap-3 border-t pt-4">
             <button
               type="button"
               onClick={onClose}
@@ -267,10 +279,14 @@ export const WorkModal: React.FC<WorkModalProps> = ({
             </button>
             <button
               type="submit"
-              className="rounded-lg bg-indigo-600 px-6 py-3 text-white shadow-lg hover:bg-indigo-700 transition disabled:opacity-50"
+              className="rounded-lg bg-indigo-600 px-6 py-3 text-white shadow-lg transition hover:bg-indigo-700 disabled:opacity-50"
               disabled={!formData.title || !formData.imageUrl || isSaving}
             >
-              {isSaving ? "Saving..." : formData.id ? "Save Changes" : "Create Work"}
+              {isSaving
+                ? "Saving..."
+                : formData.id
+                  ? "Save Changes"
+                  : "Create Work"}
             </button>
           </div>
         </form>

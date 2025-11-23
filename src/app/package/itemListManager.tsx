@@ -22,7 +22,7 @@ export const ItemListManager: React.FC<ItemListManagerProps> = ({
     isOptional = false 
 }) => {
     // Determine the initial item ID for the select box.
-    const [newItemId, setNewItemId] = useState<number | ''>(availableItems[0]?.id || '');
+    const [newItemId, setNewItemId] = useState<number | ''>(availableItems[0]?.id ?? '');
     const [showPicker, setShowPicker] = useState(false);
 
     const handleAdd = () => {
@@ -83,7 +83,7 @@ export const ItemListManager: React.FC<ItemListManagerProps> = ({
 
                     return (
                         <div key={fullItem.id} className="flex items-center gap-2 bg-gray-50 p-2 rounded-md border border-gray-200">
-                            <span className="font-medium flex-grow text-sm truncate">{fullItem.name} ({fullItem.unit || 'EA'})</span>
+                            <span className="font-medium flex-grow text-sm truncate">{fullItem.name} ({fullItem.unit ?? 'EA'})</span>
                             <input
                                 type="number"
                                 min="1"
