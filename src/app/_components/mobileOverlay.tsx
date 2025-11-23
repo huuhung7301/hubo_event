@@ -152,6 +152,7 @@ export default function MobileOverlay({
                     <input
                       type="number"
                       min="0"
+                      inputMode="none"
                       value={item.quantity}
                       onChange={(e) =>
                         handleQuantityChange(
@@ -198,11 +199,11 @@ export default function MobileOverlay({
                       value={item.quantity}
                       onChange={(e) =>
                         handleQuantityChange(
-                            index,
-                            Number(e.target.value),
-                            optionals,
-                            setOptionals,
-                          )
+                          index,
+                          Number(e.target.value),
+                          optionals,
+                          setOptionals,
+                        )
                       }
                       className="mt-1 w-20 rounded border p-1 text-center text-sm"
                     />
