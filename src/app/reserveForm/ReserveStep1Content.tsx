@@ -182,7 +182,7 @@ export default function ReserveStep1Content({
   const [selectedTheme, setSelectedTheme] = useState<string | null>(
     data.theme ? data.theme.title : null,
   );
-  const [message, setMessage] = useState(data.message || "");
+  const [message, setMessage] = useState(data.message ?? "");
 
   // ======= SCROLL STATE (shared across grids) =======
   const scrollPositions = useRef({
@@ -206,11 +206,11 @@ export default function ReserveStep1Content({
   const handleNext = () => {
     const setup: Step1Data = {
       backdrop:
-        backdrops.find((b) => b.title === selectedBackdrop) || undefined,
+        backdrops.find((b) => b.title === selectedBackdrop) ?? undefined,
       decorations: decorations.filter((d) =>
         selectedDecorations.includes(d.title),
       ),
-      theme: themes.find((t) => t.title === selectedTheme) || undefined,
+      theme: themes.find((t) => t.title === selectedTheme) ?? undefined,
       message,
     };
 
