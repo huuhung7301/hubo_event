@@ -114,7 +114,7 @@ const addOns: SelectionItem[] = [
     price: 90,
   },
 
-  // PRINTING SERVICES
+  // PRINTING
   {
     src: "https://picsum.photos/id/1023/500/500",
     title: "Custom Welcome Sign",
@@ -151,23 +151,28 @@ export default function ReserveStep3Content({
     addOns: data.addOns ?? [],
   });
 
+  // ===== Scroll State (same fix as Step 1) =====
   const scrollPositions = useRef<Record<string, number>>({});
   const scrollRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
-  useEffect(() => {
+  const restoreScroll = useCallback(() => {
     Object.entries(scrollRefs.current).forEach(([key, ref]) => {
       if (ref) ref.scrollLeft = scrollPositions.current[key] ?? 0;
     });
   }, []);
 
+  // Restore on render
+  useEffect(() => restoreScroll());
+
   const toggleAddOn = useCallback((item: SelectionItem) => {
     setSetup((prev) => {
-      const exists = prev.addOns.find((i) => i.title === item.title);
-      if (exists)
+      const exists = prev.addOns.some((i) => i.title === item.title);
+      if (exists) {
         return {
           ...prev,
           addOns: prev.addOns.filter((i) => i.title !== item.title),
         };
+      }
       return { ...prev, addOns: [...prev.addOns, item] };
     });
   }, []);
@@ -176,19 +181,17 @@ export default function ReserveStep3Content({
     scrollPositions.current[key] = e.currentTarget.scrollLeft;
   };
 
-  const handleNext = () => {
-    onSubmit(setup); // send data to parent
-  };
+  const handleNext = () => onSubmit(setup);
 
+  // ===== ScrollGrid Component (fixed same way) =====
   const ScrollGrid = ({
-    categoryItems,
     category,
+    items,
   }: {
-    categoryItems: SelectionItem[];
     category: string;
+    items: SelectionItem[];
   }) => {
-    scrollRefs.current[category] ??= null;
-    const rows = categoryItems.length < 6 ? 1 : 2; // Single row if <6 items
+    const rows = items.length < 6 ? 1 : 2;
 
     return (
       <div
@@ -199,7 +202,7 @@ export default function ReserveStep3Content({
         className="flex snap-x snap-mandatory space-x-4 overflow-x-auto pb-2"
       >
         <div className={`auto-cols grid grid-flow-col grid-rows-${rows} gap-4`}>
-          {categoryItems.map((item) => (
+          {items.map((item) => (
             <div key={item.title} className="snap-start">
               <SelectionCard
                 item={item}
@@ -213,26 +216,24 @@ export default function ReserveStep3Content({
     );
   };
 
-  const categories = Array.from(
+  // ===== Group items by category =====
+
+  const categories: string[] = Array.from(
     new Set(addOns.map((a) => a.category ?? "Other")),
   );
-  const categorizedItems: Record<string, SelectionItem[]> = {};
-  categories.forEach((cat) => {
-    categorizedItems[cat] = addOns.filter((a) => a.category === cat);
-  });
-
+  const categorizedItems = Object.fromEntries(
+    categories.map((cat) => [cat, addOns.filter((a) => a.category === cat)]),
+  );
   return (
     <div className="space-y-8">
       {categories.map((cat) => (
         <section key={cat}>
           <h2 className="mb-4 text-lg font-semibold">{cat}</h2>
-          <ScrollGrid
-            category={cat}
-            categoryItems={categorizedItems[cat] ?? []}
-          />
+          <ScrollGrid category={cat} items={categorizedItems[cat] ?? []} />
         </section>
       ))}
 
+      {/* Next Button */}
       <div className="text-right">
         <button
           onClick={handleNext}
