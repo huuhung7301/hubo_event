@@ -6,9 +6,11 @@ import PackageCard from "./packageCard";
 type PriceRange = { label: string; min: number; max: number };
 
 const priceRanges: PriceRange[] = [
-  { label: "$0-$200", min: 0, max: 200 },
-  { label: "$200-$500", min: 200, max: 500 },
-  { label: "$500+", min: 500, max: Infinity },
+  { label: "under $350 ", min: 0, max: 349 },
+  { label: "$350-$500", min: 350, max: 499 },
+  { label: "$500-$700", min: 500, max: 699 },
+  { label: "$700-$1000", min: 700, max: 999 },
+  { label: "$1000 upper", min: 1000, max: Infinity },
 ];
 
 type Item = {
@@ -40,12 +42,12 @@ export default function FilteredArea({ works, categories }: FilteredAreaProps) {
 
   const toggleCategory = (cat: string) =>
     setSelectedCategories((prev) =>
-      prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat]
+      prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat],
     );
 
   const togglePrice = (range: PriceRange) =>
     setSelectedPrices((prev) =>
-      prev.includes(range) ? prev.filter((r) => r !== range) : [...prev, range]
+      prev.includes(range) ? prev.filter((r) => r !== range) : [...prev, range],
     );
 
   const filteredWorks = works.filter((work) => {
@@ -59,7 +61,9 @@ export default function FilteredArea({ works, categories }: FilteredAreaProps) {
 
     const matchesPrice =
       selectedPrices.length === 0 ||
-      selectedPrices.some((range) => totalPrice >= range.min && totalPrice <= range.max);
+      selectedPrices.some(
+        (range) => totalPrice >= range.min && totalPrice <= range.max,
+      );
 
     return matchesCategory && matchesPrice;
   });
@@ -107,7 +111,10 @@ export default function FilteredArea({ works, categories }: FilteredAreaProps) {
         {filteredWorks.map((work) => {
           const totalPrice =
             work.items.reduce((sum, i) => sum + i.price * i.quantity, 0) +
-            work.optionalItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
+            work.optionalItems.reduce(
+              (sum, i) => sum + i.price * i.quantity,
+              0,
+            );
 
           return (
             <PackageCard

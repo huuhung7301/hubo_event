@@ -76,6 +76,7 @@ const handleReserve = async () => {
     if (!isSignedIn) {
       // 🧭 Not signed in — open Clerk modal
       openSignIn({ redirectUrl: window.location.href });
+      onClose();
       return;
     }
 

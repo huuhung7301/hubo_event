@@ -46,6 +46,32 @@ export const stockRouter = createTRPCRouter({
       });
     }),
 
+  getByKey: publicProcedure
+    .input(z.object({ key: z.string().min(1) }))
+    .query(async ({ ctx, input }) => {
+      const item = await ctx.db.item.findUnique({
+        where: { key: input.key },
+        include: { category: true }, // Include category details
+      });
+
+      return item;
+    }),
+
+  getByCategory: publicProcedure
+    .input(
+      z.object({
+        categoryId: z.number().min(1),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      return ctx.db.item.findMany({
+        where: {
+          categoryId: input.categoryId,
+        },
+        include: { category: true },
+        orderBy: { name: "asc" },
+      });
+    }),
   // ===========================
   // CREATE ITEM
   // ===========================
@@ -116,41 +142,43 @@ export const stockRouter = createTRPCRouter({
   // SUPABASE IMAGE UPLOAD
   // ===========================
   uploadImage: publicProcedure
-  .input(
-    z.object({
-      fileName: z.string(),
-      fileType: z.string(),
-      base64: z.string(), // frontend sends Base64 string
+    .input(
+      z.object({
+        fileName: z.string(),
+        fileType: z.string(),
+        base64: z.string(), // frontend sends Base64 string
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const { fileName, base64, fileType } = input;
+
+      // 1. Sanitize filename: remove spaces, colons, and unsafe characters
+      const sanitizedFileName = fileName
+        .replace(/\s+/g, "_") // replace spaces with underscores
+        .replace(/[:]/g, "-") // replace colons with dash
+        .replace(/[^a-zA-Z0-9._-]/g, ""); // remove any other unsafe chars
+
+      // 2. Create unique file path
+      const filePath = `items/${Date.now()}-${sanitizedFileName}`;
+
+      // 3. Convert base64 → buffer
+      const buffer = Buffer.from(
+        base64.replace(/^data:.*;base64,/, ""),
+        "base64",
+      );
+
+      // 4. Upload to Supabase storage
+      const { data, error } = await supabase.storage
+        .from("hubo")
+        .upload(filePath, buffer, { contentType: fileType });
+
+      if (error) throw new Error(error.message);
+
+      // 5. Get public URL
+      const { publicUrl } = supabase.storage
+        .from("hubo")
+        .getPublicUrl(filePath).data;
+
+      return { url: publicUrl };
     }),
-  )
-  .mutation(async ({ input }) => {
-    const { fileName, base64, fileType } = input;
-
-    // 1. Sanitize filename: remove spaces, colons, and unsafe characters
-    const sanitizedFileName = fileName
-      .replace(/\s+/g, "_")       // replace spaces with underscores
-      .replace(/[:]/g, "-")       // replace colons with dash
-      .replace(/[^a-zA-Z0-9._-]/g, ""); // remove any other unsafe chars
-
-    // 2. Create unique file path
-    const filePath = `items/${Date.now()}-${sanitizedFileName}`;
-
-    // 3. Convert base64 → buffer
-    const buffer = Buffer.from(
-      base64.replace(/^data:.*;base64,/, ""),
-      "base64"
-    );
-
-    // 4. Upload to Supabase storage
-    const { data, error } = await supabase.storage
-      .from("hubo")
-      .upload(filePath, buffer, { contentType: fileType });
-
-    if (error) throw new Error(error.message);
-
-    // 5. Get public URL
-    const { publicUrl } = supabase.storage.from("hubo").getPublicUrl(filePath).data;
-
-    return { url: publicUrl };
-  }),
 });

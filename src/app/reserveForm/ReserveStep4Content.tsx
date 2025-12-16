@@ -1,26 +1,95 @@
 "use client";
 
 import { useState } from "react";
-import type { SelectionItem } from "../_components/selectionCard";
+// Removed explicit imports for SelectionItem and ReservationItem
 import type {
   Step1Data,
   Step2Data,
   Step3Data,
-  ReservationItem,
 } from "../reserve/page";
 import { api } from "~/trpc/react";
+
+// --- NEW LOCAL TYPES ---
+
+/**
+ * Type used for the API payload (matches the backend Zod schema).
+ */
+interface APIPayloadItem {
+  key: string;
+  quantity: number;
+  priceAtBooking: number;
+}
+
+/**
+ * Type used for displaying selected items in the UI summary.
+ */
+interface UISummaryItem {
+  title: string;
+  category?: string;
+  price?: number; 
+  src: string;
+  key?: string;
+}
+
+// --- COMPONENT PROPS (Updated to use APIPayloadItem) ---
 
 interface ReserveStep4ContentProps {
   reservationId?: number; // reservation ID for updating
   existingStep1Data?: {
-    items: ReservationItem[];
-    optionalItems?: ReservationItem[];
+    items: APIPayloadItem[]; // Updated to use APIPayloadItem
+    optionalItems?: APIPayloadItem[]; // Updated to use APIPayloadItem
   };
   newStep1Data?: Step1Data;
   step2Data: Step2Data;
   step3Data: Step3Data;
   onConfirm: () => void;
 }
+
+// ⚠️ UPDATED HELPER: Flattens the flexible Step1Data into a usable item structure
+// Now uses UISummaryItem for internal processing and APIPayloadItem for the output array.
+const flattenNewStep1Data = (data: Step1Data) => {
+  const preparedItems: APIPayloadItem[] = []; // Output: API Payload structure
+  let total: number = 0;
+  const renderableItems: UISummaryItem[] = []; // Used for displaying the summary (UISummaryItem)
+
+  for (const key in data) {
+    const value = data[key];
+
+    // Skip the string message field
+    if (key === "message") continue;
+
+    if (value === undefined || value === null) continue;
+
+    if (Array.isArray(value)) {
+      // Handle multi-select arrays (e.g., decorations, lighting)
+      (value as UISummaryItem[]).forEach((item) => {
+        preparedItems.push({
+          key: item.title, // Use title as key
+          quantity: 1, 
+          priceAtBooking: item.price ?? 0,
+        });
+        total += item.price ?? 0;
+        renderableItems.push(item);
+      });
+    } else if (typeof value === "object" && "key" in value) {
+      // Handle single SelectionItem objects (e.g., backdrop, theme, flooring)
+      const item = value as UISummaryItem;
+      preparedItems.push({
+        key: item.title, // Use title as key
+        quantity: 1,
+        priceAtBooking: item.price ?? 0,
+      });
+      total += item.price ?? 0;
+      renderableItems.push(item);
+    }
+  }
+
+  return {
+    preparedItems,
+    total,
+    renderableItems,
+  };
+};
 
 export default function ReserveStep4Content({
   reservationId,
@@ -31,12 +100,14 @@ export default function ReserveStep4Content({
   onConfirm,
 }: ReserveStep4ContentProps) {
   const [loading, setLoading] = useState(false);
-  const mutation = api.reservation.updateReservation.useMutation();
+  // NOTE: updateReservation is not defined in the provided router, but kept for context.
+  const updateMutation = api.reservation.updateReservation.useMutation(); 
+  const createMutation = api.reservation.createReservation.useMutation();
 
-  // --- Helper functions ---
-  const renderItemRow = (item: SelectionItem) => (
+  // --- Helper functions (Updated to use UISummaryItem) ---
+  const renderItemRow = (item: UISummaryItem) => (
     <div
-      key={item.title}
+      key={item.title} 
       className="flex items-center justify-between gap-4 rounded-lg border border-gray-200 bg-white/60 p-3 shadow-sm"
     >
       <div className="flex items-center gap-3">
@@ -47,19 +118,24 @@ export default function ReserveStep4Content({
         />
         <div>
           <p className="font-medium text-gray-800">{item.title}</p>
-          <p className="text-sm text-gray-500">{item.category}</p>
+          <p className="text-sm text-gray-500">{item.category ?? ""}</p>
         </div>
       </div>
-      <p className="font-semibold text-gray-700">${item.price}</p>
+      <p className="font-semibold text-gray-700">${item.price ?? 0}</p>
     </div>
   );
 
-  const renderList = (items: SelectionItem[]) =>
+  const renderList = (items: UISummaryItem[]) =>
     items.map((item, idx) => (
       <div key={item.title + idx}>{renderItemRow(item)}</div>
     ));
 
-  // --- Step 1 total ---
+  // --- Calculate Step 1 data and total ---
+
+  const preparedStep1Data = newStep1Data
+    ? flattenNewStep1Data(newStep1Data)
+    : null;
+
   const step1Total = existingStep1Data
     ? existingStep1Data.items.reduce(
         (sum, i) => sum + i.quantity * i.priceAtBooking,
@@ -71,11 +147,7 @@ export default function ReserveStep4Content({
             0,
           )
         : 0)
-    : newStep1Data
-      ? (newStep1Data.backdrop?.price ?? 0) +
-        newStep1Data.decorations.reduce((sum, d) => sum + (d.price ?? 0), 0) +
-        (newStep1Data.theme?.price ?? 0)
-      : 0;
+    : (preparedStep1Data?.total ?? 0); 
 
   // --- Step 3 total ---
   const step3Total = step3Data.addOns.reduce(
@@ -86,69 +158,92 @@ export default function ReserveStep4Content({
   // --- Total ---
   const total = step1Total + step3Total + (step2Data.deliveryFee ?? 0);
 
-  // --- Prepare items JSON ---
-  const items = existingStep1Data
-    ? existingStep1Data.items
-    : newStep1Data
-      ? [
-          ...(newStep1Data.backdrop
-            ? [
-                {
-                  key: newStep1Data.backdrop.title,
-                  quantity: 1,
-                  priceAtBooking: newStep1Data.backdrop.price ?? 0,
-                },
-              ]
-            : []),
-          ...newStep1Data.decorations.map((d) => ({
-            key: d.title,
-            quantity: 1,
-            priceAtBooking: d.price ?? 0,
-          })),
-          ...(newStep1Data.theme
-            ? [
-                {
-                  key: newStep1Data.theme.title,
-                  quantity: 1,
-                  priceAtBooking: newStep1Data.theme.price ?? 0,
-                },
-              ]
-            : []),
-        ]
-      : [];
+  // --- Prepare items JSON for mutation payload (Uses APIPayloadItem) ---
+  const items: APIPayloadItem[] = existingStep1Data
+    ? existingStep1Data.items 
+    : (preparedStep1Data?.preparedItems ?? []); 
 
-  const optionalItems = existingStep1Data?.optionalItems ?? [];
+  const optionalItems: APIPayloadItem[] = existingStep1Data?.optionalItems ?? [];
 
   // --- Confirm handler ---
   const handleConfirm = async () => {
-    if (!reservationId) return;
     setLoading(true);
+
+    // Prepare ALL items for the creation payload
+    // Step 3 addOns (UISummaryItem) are converted to APIPayloadItem structure here
+    const addOnPayloadItems: APIPayloadItem[] = step3Data.addOns.map((a) => ({
+      key: a.title, // Using title as key for API
+      quantity: 1,
+      priceAtBooking: a.price ?? 0,
+    }));
+    
+    // Combine Step 1 items and Step 3 add-ons for the final 'items' payload in create
+    const allItemsForCreation = [
+      ...items, 
+      ...addOnPayloadItems,
+    ];
+
     try {
-      await mutation.mutateAsync({
-        id: reservationId,
-        items,
-        optionalItems,
-        reservationDate: step2Data.date
-          ? new Date(step2Data.date).toISOString()
-          : undefined,
-        postcode: step2Data.postcode,
-        customerName: step2Data.customerName,
-        customerEmail: step2Data.customerEmail,
-        customerPhone: step2Data.customerPhone,
-        extra: {
-          addOns: step3Data.addOns,
-          deliveryFee: step2Data.deliveryFee,
-        },
-        totalPrice: total,
-      });
+      if (reservationId) {
+        // --- SCENARIO 1: UPDATE EXISTING RESERVATION ---
+        console.log("Updating existing reservation:", reservationId);
+        await updateMutation.mutateAsync({
+          id: reservationId,
+          // Use the separated items/optionalItems structure for UPDATE
+          items: items,
+          optionalItems: optionalItems,
+          reservationDate: step2Data.date
+            ? new Date(step2Data.date).toISOString()
+            : undefined,
+          postcode: step2Data.postcode,
+          customerName: step2Data.customerName,
+          customerEmail: step2Data.customerEmail,
+          customerPhone: step2Data.customerPhone,
+          extra: {
+            // NOTE: The backend expects addOns to be APIPayloadItem, but step3Data.addOns is UISummaryItem
+            // We pass the raw UISummaryItem array here, assuming the update mutation on the backend
+            // is flexible or performs its own coercion. For clean passing, we should map this too.
+            addOns: addOnPayloadItems, 
+            deliveryFee: step2Data.deliveryFee,
+          },
+          totalPrice: total,
+        });
+      } else {
+        // --- SCENARIO 2: CREATE NEW RESERVATION ---
+        const NEW_WORK_ID = 0;
+
+        console.log("Creating new reservation for workId:", NEW_WORK_ID);
+
+        await createMutation.mutateAsync({
+          userId: step2Data.customerEmail, 
+          workId: NEW_WORK_ID,
+          customerName: step2Data.customerName,
+          customerEmail: step2Data.customerEmail,
+          customerPhone: step2Data.customerPhone,
+          notes: newStep1Data?.message,
+          // Use the COMBINED items array for CREATE
+          items: allItemsForCreation,
+          postcode: step2Data.postcode,
+          reservationDate: step2Data.date
+            ? new Date(step2Data.date).toISOString()
+            : undefined,
+          extra: {
+            // Use the mapped APIPayloadItem array for addOns
+            addOns: addOnPayloadItems,
+            deliveryFee: step2Data.deliveryFee,
+          },
+        }); 
+      }
+
       onConfirm();
     } catch (err) {
-      console.error("Failed to update reservation:", err);
+      console.error("Failed to process reservation:", err);
     } finally {
       setLoading(false);
     }
   };
 
+  // --- RENDERING ---
   return (
     <div className="space-y-8">
       <h2 className="text-center text-2xl font-bold text-gray-800">
@@ -160,7 +255,9 @@ export default function ReserveStep4Content({
         <h3 className="border-b pb-1 text-lg font-semibold text-gray-700">
           Step 1: Package Details
         </h3>
+
         {existingStep1Data ? (
+          // 1. Rendering existing reservation (Uses APIPayloadItem structure)
           <>
             {existingStep1Data.items.map((item) => (
               <div key={item.key} className="flex justify-between">
@@ -185,13 +282,16 @@ export default function ReserveStep4Content({
                 </>
               )}
           </>
-        ) : newStep1Data ? (
+        ) : preparedStep1Data ? (
+          // 2. Rendering new reservation (Uses UISummaryItem)
           <>
-            {newStep1Data.backdrop && renderItemRow(newStep1Data.backdrop)}
-            {newStep1Data.decorations.length > 0 &&
-              renderList(newStep1Data.decorations)}
-            {newStep1Data.theme && renderItemRow(newStep1Data.theme)}
-            {newStep1Data.message && (
+            {preparedStep1Data.renderableItems.length > 0 ? (
+              renderList(preparedStep1Data.renderableItems)
+            ) : (
+              <p className="text-gray-500 italic">No package items selected.</p>
+            )}
+
+            {newStep1Data && newStep1Data.message && (
               <p className="mt-3 text-sm text-gray-600 italic">
                 Message: “{newStep1Data.message}”
               </p>
@@ -202,7 +302,7 @@ export default function ReserveStep4Content({
         )}
       </div>
 
-      {/* Step 2 */}
+      {/* Step 2, Step 3, Total, and Button remain unchanged */}
       <div className="space-y-2">
         <h3 className="border-b pb-1 text-lg font-semibold text-gray-700">
           Step 2: Availability & Delivery

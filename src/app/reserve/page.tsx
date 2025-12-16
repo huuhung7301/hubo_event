@@ -15,16 +15,18 @@ import { api } from "~/trpc/react";
 
 export interface ReservationItem {
   key: string;
+  name: string;
   quantity: number;
   priceAtBooking: number;
 }
 
-export interface Step1Data {
-  backdrop?: SelectionItem;
-  decorations: SelectionItem[];
-  theme?: SelectionItem;
+export type Step1Data = {
+  // The index signature must cover all possible values stored under any key.
+  // This includes SelectionItem (single select), SelectionItem[] (multi-select),
+  // and the string value for 'message'.
+  [key: string]: SelectionItem | SelectionItem[] | string | undefined;
   message: string;
-}
+};
 
 // Step 2: Availability & Delivery
 export interface Step2Data {
@@ -53,7 +55,6 @@ export default function ReservePage() {
       { enabled: !!packageId },
     );
 
-  console.log("Reservation data:", reservation);
   // --- Step control ---
   const [currentStep, setCurrentStep] = useState<number>(1);
 
@@ -73,23 +74,16 @@ export default function ReservePage() {
     }
   }, [packageId, reservation, user, isLoaded, isLoading, router]);
 
-  // --- Step 1: Create Package ---
+
   const [step1Data, setStep1Data] = useState<Step1Data>({
-    backdrop: undefined,
-    decorations: [],
-    theme: undefined,
     message: "",
   });
 
   const handleStep1Submit = (data: Step1Data) => {
-    setStep1Data({
-      backdrop: data.backdrop ?? undefined,
-      decorations: data.decorations,
-      theme: data.theme ?? undefined,
-      message: data.message,
-    });
+    setStep1Data(data); 
     setCurrentStep(2);
   };
+  console.log("Reservation data:", step1Data);
 
   // --- Step 2: Check Availability ---
   const [step2Data, setStep2Data] = useState<Step2Data>({
@@ -121,18 +115,6 @@ export default function ReservePage() {
     setStep3Data(data);
     console.log("Step 3 data submitted:", data);
     setCurrentStep(4);
-  };
-
-  // --- Step 4: Payment & Confirmation ---
-  const handleConfirm = () => {
-    setCurrentStep(5);
-  };
-
-  // --- Combine data only when needed (e.g., for backend submission) ---
-  const combinedReservationData = {
-    step1: step1Data,
-    step2: step2Data,
-    step3: step3Data,
   };
 
   const steps = [
@@ -178,6 +160,7 @@ export default function ReservePage() {
                   : []
               }
               onContinue={() => setCurrentStep(2)}
+              imageUrl={reservation.work.imageUrl}
             />
           ) : (
             <ReserveStep1Content

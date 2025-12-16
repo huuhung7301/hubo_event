@@ -7,12 +7,14 @@ interface ExistingReservationSummaryProps {
   items: ReservationItem[];
   optionalItems: ReservationItem[];
   onContinue: () => void;
+  imageUrl: string;
 }
 
 export default function ExistingReservationSummary({
   items,
   optionalItems,
   onContinue,
+  imageUrl,
 }: ExistingReservationSummaryProps) {
   const renderItemList = (list: ReservationItem[]) => (
     <ul className="space-y-2 rounded-lg border border-gray-200 bg-gray-50 p-4">
@@ -35,7 +37,11 @@ export default function ExistingReservationSummary({
       <h2 className="text-center text-2xl font-semibold text-gray-900">
         Your Existing Reservation
       </h2>
-
+      <img
+        src={imageUrl}
+        className="h-auto w-full rounded object-cover"
+        alt=""
+      />
       {/* Main Items */}
       <div>
         <h3 className="mb-2 font-medium text-gray-700">Main Items</h3>

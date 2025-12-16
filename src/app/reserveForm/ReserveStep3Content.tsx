@@ -1,243 +1,275 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
-import SelectionCard from "../_components/selectionCard";
-import type { SelectionItem } from "../_components/selectionCard";
+import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
+// Assuming ItemDisplayComponent is now defined locally or imported
+// ⚠️ Adjust path as necessary if ItemDisplayComponent is used here
+import { ItemDisplayComponent } from "./itemDisplayComponent"; 
+import type { SelectionItem } from "./ReserveStep1Content";
+import { api } from "~/trpc/react";
 
+
+// --------------------------------------------------------------------------
+// 1. DATA TYPES & CONFIGURATION
+// --------------------------------------------------------------------------
+
+// Defines the raw item data returned by the API (same as Step 1)
+interface ItemData {
+  id: number;
+  key: string;
+  name: string;
+  basePrice: number;
+  unit: string | null;
+  imageUrl: string | null;
+  category: { name: string } | null;
+}
+
+// Helper function to transform raw Item data into frontend SelectionItem (same as Step 1)
+const mapItemToSelectionItem = (item: ItemData): SelectionItem => ({
+  id: item.id,
+  key: item.key,
+  src: item.imageUrl ?? "https://ralfvanveen.com/wp-content/uploads/2021/06/Placeholder-_-Glossary.svg",
+  title: item.name,
+  category: item.category?.name ?? "Other",
+  price: item.basePrice,
+});
+
+
+// --------------------------------------------------------------------------
+// 2. SCROLL GRID AND ITEM DISPLAY (Re-used structure from Step 1)
+// --------------------------------------------------------------------------
+
+// Re-using the structure for ItemDisplay (assuming it accepts props like Step 1)
+interface ItemDisplayProps {
+  item: SelectionItem;
+  selected: boolean;
+  onSelect: (item: SelectionItem) => void;
+}
+const ItemDisplay = React.memo(ItemDisplayComponent);
+
+
+// Scroll Grid definition from Step 1, adapted for category name keys
+type ScrollKey = string; 
+
+interface ScrollGridProps {
+  items: SelectionItem[];
+  selectedCheck: (item: SelectionItem) => boolean;
+  onSelect: (item: SelectionItem) => void;
+  innerRef?: React.RefObject<HTMLDivElement | null>;
+  scrollKey: ScrollKey;
+  handleScroll: (
+    key: ScrollKey,
+    e: React.UIEvent<HTMLDivElement>,
+  ) => void;
+  scrollPositions: React.MutableRefObject<Record<string, number>>;
+}
+
+const ScrollGridComponent = ({
+  items,
+  selectedCheck,
+  onSelect,
+  innerRef,
+  scrollKey,
+  handleScroll,
+  scrollPositions,
+}: ScrollGridProps) => {
+  useEffect(() => {
+    if (innerRef?.current) {
+      innerRef.current.scrollLeft = scrollPositions.current[scrollKey] || 0;
+    }
+  }, [innerRef, scrollKey, scrollPositions]);
+
+  // Adjust grid-rows based on item count, using 2 rows if more than 5 items
+  const rows = items.length <= 5 ? 1 : 2;
+
+  return (
+    <div
+      ref={innerRef ?? null}
+      onScroll={(e) => handleScroll(scrollKey, e)}
+      className="flex snap-x snap-mandatory space-x-4 overflow-x-auto pb-2"
+    >
+      {/* ⚠️ Using auto-cols-min to ensure card width (w-full used for flexibility) */}
+      <div className={`auto-cols-min grid grid-flow-col grid-rows-${rows} gap-4`}> 
+        {items.map((item) => (
+          // Adjusted to ensure w-36 consistency with Step 1, if needed
+          <div key={item.key} className="snap-start w-36"> 
+            <ItemDisplay 
+              item={item}
+              selected={selectedCheck(item)}
+              onSelect={onSelect}
+            />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+export const ScrollGrid = React.memo(ScrollGridComponent);
+
+
+// --------------------------------------------------------------------------
+// 3. MAIN COMPONENT (ReserveStep3Content)
+// --------------------------------------------------------------------------
+
+// Step 3 Data structure from the parent component
 interface ReserveStep3ContentProps {
   data: { addOns: SelectionItem[] };
   onSubmit: (data: { addOns: SelectionItem[] }) => void;
 }
 
-const addOns: SelectionItem[] = [
-  // LIGHTING
-  {
-    src: "https://picsum.photos/id/1015/500/500",
-    title: "LED Uplights",
-    category: "Lighting",
-    price: 80,
-  },
-  {
-    src: "https://picsum.photos/id/1016/500/500",
-    title: "Fairy Lights",
-    category: "Lighting",
-    price: 50,
-  },
-  {
-    src: "https://picsum.photos/id/1013/500/500",
-    title: "Spotlight Pack",
-    category: "Lighting",
-    price: 100,
-  },
-  {
-    src: "https://picsum.photos/id/1015/500/500",
-    title: "LED Uplights 2",
-    category: "Lighting",
-    price: 80,
-  },
-  {
-    src: "https://picsum.photos/id/1016/500/500",
-    title: "Fairy Lights 2",
-    category: "Lighting",
-    price: 50,
-  },
-  {
-    src: "https://picsum.photos/id/1013/500/500",
-    title: "Spotlight Pack 2",
-    category: "Lighting",
-    price: 100,
-  },
-  {
-    src: "https://picsum.photos/id/1015/500/500",
-    title: "LED Uplights3",
-    category: "Lighting",
-    price: 80,
-  },
-  {
-    src: "https://picsum.photos/id/1016/500/500",
-    title: "Fairy Lights3",
-    category: "Lighting",
-    price: 50,
-  },
-  {
-    src: "https://picsum.photos/id/1013/500/500",
-    title: "Spotlight Pack 3",
-    category: "Lighting",
-    price: 100,
-  },
-
-  // TABLE DECORATION
-  {
-    src: "https://picsum.photos/id/1015/500/500",
-    title: "Centerpiece Pack",
-    category: "Table Decoration",
-    price: 60,
-  },
-  {
-    src: "https://picsum.photos/id/1016/500/500",
-    title: "Table Runner Set",
-    category: "Table Decoration",
-    price: 40,
-  },
-  {
-    src: "https://picsum.photos/id/1012/500/500",
-    title: "Mini Table Props",
-    category: "Table Decoration",
-    price: 30,
-  },
-
-  // PHOTO / VIDEO
-  {
-    src: "https://picsum.photos/id/1020/500/500",
-    title: "Photo Booth Setup",
-    category: "Photo/Video",
-    price: 120,
-  },
-  {
-    src: "https://picsum.photos/id/1021/500/500",
-    title: "DIY Props Kit",
-    category: "Photo/Video",
-    price: 35,
-  },
-
-  // EXPERIENCE
-  {
-    src: "https://picsum.photos/id/1022/500/500",
-    title: "Interactive Guest Wall",
-    category: "Experience",
-    price: 70,
-  },
-  {
-    src: "https://picsum.photos/id/1021/500/500",
-    title: "Candy / Dessert Table Setup",
-    category: "Experience",
-    price: 90,
-  },
-
-  // PRINTING
-  {
-    src: "https://picsum.photos/id/1023/500/500",
-    title: "Custom Welcome Sign",
-    category: "Printing Services",
-    price: 60,
-  },
-  {
-    src: "https://picsum.photos/id/1024/500/500",
-    title: "Personalized Table Cards",
-    category: "Printing Services",
-    price: 40,
-  },
-
-  // DESIGN PACK
-  {
-    src: "https://picsum.photos/id/1025/500/500",
-    title: "Our Designer Styling Pack",
-    category: "Design Pack",
-    price: 150,
-  },
-  {
-    src: "https://picsum.photos/id/1026/500/500",
-    title: "Custom Theme Setup Consultation",
-    category: "Design Pack",
-    price: 100,
-  },
-];
+// We will use the sub-category name (item.category) as the grouping key
+type AddOnCategoryKey = string; 
+const ADDON_CATEGORY_ID = 8; // ID for "Additional" or Add-ons category
 
 export default function ReserveStep3Content({
   data,
   onSubmit,
 }: ReserveStep3ContentProps) {
-  const [setup, setSetup] = useState<{ addOns: SelectionItem[] }>({
-    addOns: data.addOns ?? [],
-  });
 
-  // ===== Scroll State (same fix as Step 1) =====
-  const scrollPositions = useRef<Record<string, number>>({});
-  const scrollRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  // --- 1. DATA FETCHING ---
+  // Fetch all items belonging to the general Add-ons Category ID (8)
+  const { data: rawAddOns, isLoading } = api.stock.getByCategory.useQuery(
+    { categoryId: ADDON_CATEGORY_ID }, 
+    {
+      staleTime: 5 * 60 * 1000, 
+      enabled: true, 
+    }
+  );
+  
+  // --- 2. PROCESS, TRANSFORM, AND GROUP BY SUB-CATEGORY NAME ---
+  const allAddOns = useMemo(() => {
+    if (!rawAddOns) return [];
+    return rawAddOns.map(mapItemToSelectionItem);
+  }, [rawAddOns]);
 
-  const restoreScroll = useCallback(() => {
-    Object.entries(scrollRefs.current).forEach(([key, ref]) => {
-      if (ref) ref.scrollLeft = scrollPositions.current[key] ?? 0;
+  // Group items by their sub-category name (item.category)
+  const categorizedItems = useMemo(() => {
+    const map: Record<AddOnCategoryKey, SelectionItem[]> = {};
+    allAddOns.forEach(item => {
+        const categoryKey = item.category; // Using the item's category name as the grouping key
+        if (!map[categoryKey]) {
+            map[categoryKey] = [];
+        }
+        map[categoryKey].push(item);
     });
-  }, []);
+    return map;
+  }, [allAddOns]);
 
-  // Restore on render
-  useEffect(() => restoreScroll());
+  const categories: AddOnCategoryKey[] = useMemo(() => Object.keys(categorizedItems), [categorizedItems]);
+  
+  // --- 3. STATE MANAGEMENT ---
+  // We use a simplified state structure: an array of selected item keys
+  const initialSelectionState = useMemo(() => {
+    return data.addOns?.map(d => d.key) ?? [];
+  }, [data]);
 
-  const toggleAddOn = useCallback((item: SelectionItem) => {
-    setSetup((prev) => {
-      const exists = prev.addOns.some((i) => i.title === item.title);
-      if (exists) {
-        return {
-          ...prev,
-          addOns: prev.addOns.filter((i) => i.title !== item.title),
-        };
-      }
-      return { ...prev, addOns: [...prev.addOns, item] };
+  const [selectedAddOnKeys, setSelectedAddOnKeys] = useState<string[]>(initialSelectionState);
+
+  // --- 4. SCROLL STATE & HANDLERS ---
+  const scrollPositions = useRef<Record<ScrollKey, number>>(
+    Object.fromEntries(categories.map(c => [c, 0]))
+  );
+  
+  // Create refs for each sub-category scroll area
+  const categoryRefs = useRef<Record<ScrollKey, React.RefObject<HTMLDivElement | null>>>(
+    Object.fromEntries(categories.map(() => [Math.random().toString(36).substring(2, 9), React.createRef()]))
+  );
+  
+  // Update refs to use category name keys (recreating the map ensures we cover all dynamic categories)
+  useEffect(() => {
+    // Dynamically populate refs based on current categories
+    const newRefs: Record<ScrollKey, React.RefObject<HTMLDivElement | null>> = {};
+    categories.forEach(cat => {
+        // Reuse existing ref if available, otherwise create a new one
+        newRefs[cat] = categoryRefs.current[cat] || React.createRef();
     });
-  }, []);
+    categoryRefs.current = newRefs;
 
-  const handleScroll = (key: string, e: React.UIEvent<HTMLDivElement>) => {
+    // Dynamically populate scroll positions
+    const newScrollPositions: Record<ScrollKey, number> = {};
+    categories.forEach(cat => {
+        newScrollPositions[cat] = scrollPositions.current[cat] ?? 0;
+    });
+    scrollPositions.current = newScrollPositions;
+  }, [categories]);
+
+  
+  const handleScroll = (key: ScrollKey, e: React.UIEvent<HTMLDivElement>) => {
     scrollPositions.current[key] = e.currentTarget.scrollLeft;
   };
 
-  const handleNext = () => onSubmit(setup);
+  const handleSelection = useCallback((item: SelectionItem) => {
+    setSelectedAddOnKeys(prevKeys => {
+      const isSelected = prevKeys.includes(item.key);
+      if (isSelected) {
+        return prevKeys.filter(k => k !== item.key);
+      } else {
+        return [...prevKeys, item.key];
+      }
+    });
+  }, []);
 
-  // ===== ScrollGrid Component (fixed same way) =====
-  const ScrollGrid = ({
-    category,
-    items,
-  }: {
-    category: string;
-    items: SelectionItem[];
-  }) => {
-    const rows = items.length < 6 ? 1 : 2;
-
+  // --- SUBMIT HANDLER ---
+  const handleNext = () => {
+    // Find all selected items from the combined list
+    const selectedItems = selectedAddOnKeys
+        .map(key => allAddOns.find(item => item.key === key))
+        .filter((item): item is SelectionItem => item !== undefined); 
+        
+    onSubmit({ addOns: selectedItems });
+  };
+  
+  // --------------------------------------------------------------------------
+  // 🖥️ RENDER
+  // --------------------------------------------------------------------------
+  
+  if (isLoading) {
     return (
-      <div
-        ref={(el) => {
-          scrollRefs.current[category] = el;
-        }}
-        onScroll={(e) => handleScroll(category, e)}
-        className="flex snap-x snap-mandatory space-x-4 overflow-x-auto pb-2"
-      >
-        <div className={`auto-cols grid grid-flow-col grid-rows-${rows} gap-4`}>
-          {items.map((item) => (
-            <div key={item.title} className="snap-start">
-              <SelectionCard
-                item={item}
-                selected={setup.addOns.some((a) => a.title === item.title)}
-                onSelect={toggleAddOn}
-              />
-            </div>
-          ))}
-        </div>
+      <div className="flex h-64 items-center justify-center">
+        <p className="animate-pulse text-lg text-gray-500">Loading add-on catalog...</p>
       </div>
     );
-  };
+  }
 
-  // ===== Group items by category =====
-
-  const categories: string[] = Array.from(
-    new Set(addOns.map((a) => a.category ?? "Other")),
-  );
-  const categorizedItems = Object.fromEntries(
-    categories.map((cat) => [cat, addOns.filter((a) => a.category === cat)]),
-  );
   return (
     <div className="space-y-8">
-      {categories.map((cat) => (
-        <section key={cat}>
-          <h2 className="mb-4 text-lg font-semibold">{cat}</h2>
-          <ScrollGrid category={cat} items={categorizedItems[cat] ?? []} />
-        </section>
-      ))}
+      
+      {categories.length > 0 ? (
+          categories.map(catKey => {
+            const items = categorizedItems[catKey] || [];
+            const ref = categoryRefs.current[catKey] as React.RefObject<HTMLDivElement | null>;
+
+            return (
+              <section key={catKey}>
+                <h2 className="mb-4 text-lg font-semibold">
+                  {catKey} (Optional)
+                </h2>
+                
+                {items.length > 0 ? (
+                  <ScrollGrid
+                    items={items}
+                    selectedCheck={(i) => selectedAddOnKeys.includes(i.key)}
+                    onSelect={handleSelection}
+                    innerRef={ref}
+                    scrollKey={catKey}
+                    handleScroll={handleScroll}
+                    scrollPositions={scrollPositions}
+                  />
+                ) : (
+                    <div className="text-gray-500 italic">No items available in this category.</div>
+                )}
+              </section>
+            );
+          })
+      ) : (
+          <div className="text-center text-gray-500 italic">No add-ons available at this time.</div>
+      )}
 
       {/* Next Button */}
       <div className="text-right">
         <button
           onClick={handleNext}
-          className="rounded-lg bg-blue-600 px-6 py-3 font-semibold text-white transition-colors hover:bg-blue-700"
+          className="rounded-lg px-6 py-3 font-semibold text-white transition-colors bg-blue-600 hover:bg-blue-700"
         >
           Next Step →
         </button>

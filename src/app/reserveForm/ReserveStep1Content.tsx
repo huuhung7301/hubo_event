@@ -1,27 +1,94 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
-import type { SelectionItem } from "../_components/selectionCard";
-import SelectionCardComponent from "../_components/selectionCard";
+import React, { useState, useRef, useEffect, useMemo } from "react";
+// Assuming ItemDisplayComponent is now defined locally or imported
+import { ItemDisplayComponent } from "./itemDisplayComponent";
 import type { Step1Data } from "../reserve/page";
+import { api } from "~/trpc/react";
+// We don't need useQueries anymore
 
-const SelectionCard = React.memo(SelectionCardComponent);
+// --------------------------------------------------------------------------
+// 1. DATA TYPES & CONFIGURATION
+// --------------------------------------------------------------------------
+
+// Defines the raw item data returned by the API
+interface ItemData {
+  id: number;
+  key: string;
+  name: string;
+  basePrice: number;
+  unit: string | null;
+  imageUrl: string | null;
+  category: { name: string } | null;
+}
+
+// Defines the simplified structure used by the frontend components
+export interface SelectionItem {
+  id: number;
+  key: string;
+  src: string;
+  title: string;
+  category: string;
+  price: number;
+}
+
+interface CategoryConfig {
+  id: number; 
+  name: string; 
+  stateKey: string; 
+  selectionType: "single" | "multi"; 
+  isRequired: boolean; 
+}
+
+// Static Category Configuration 
+const CATEGORY_CONFIG: CategoryConfig[] = [
+  { id: 2, name: "Backdrops", stateKey: "backdrops", selectionType: "single", isRequired: true },
+  { id: 3, name: "Baloons", stateKey: "baloons", selectionType: "multi", isRequired: false },
+  { id: 4, name: "Flowers", stateKey: "flowers", selectionType: "multi", isRequired: false },
+  { id: 5, name: "Plinth", stateKey: "plinth", selectionType: "single", isRequired: false },
+  { id: 6, name: "Platform", stateKey: "platform", selectionType: "single", isRequired: false },
+];
+
+
+// Helper function to transform raw Item data into frontend SelectionItem
+const mapItemToSelectionItem = (item: ItemData): SelectionItem => ({
+  id: item.id,
+  key: item.key,
+  src: item.imageUrl ?? "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT9cSGzVkaZvJD5722MU5A-JJt_T5JMZzotcw&s",
+  title: item.name,
+  category: item.category?.name ?? "Uncategorized",
+  price: item.basePrice,
+});
+
+
+// --------------------------------------------------------------------------
+// 2. ITEM DISPLAY COMPONENT (Kept as previously defined placeholder)
+// --------------------------------------------------------------------------
+
+interface ItemDisplayProps {
+  item: SelectionItem;
+  selected: boolean;
+  onSelect: (item: SelectionItem) => void;
+}
+
+// --------------------------------------------------------------------------
+// 3. SCROLL GRID COMPONENT (Kept as previously defined)
+// --------------------------------------------------------------------------
+const ItemDisplay = React.memo(ItemDisplayComponent);
+
+type ScrollKey = string; 
 
 interface ScrollGridProps {
   items: SelectionItem[];
   selectedCheck: (item: SelectionItem) => boolean;
   onSelect: (item: SelectionItem) => void;
-  innerRef: React.RefObject<HTMLDivElement | null>;
-  scrollKey: "backdrop" | "decorations" | "themes";
+  innerRef?: React.RefObject<HTMLDivElement | null>;
+  scrollKey: ScrollKey;
   handleScroll: (
-    key: "backdrop" | "decorations" | "themes",
+    key: ScrollKey,
     e: React.UIEvent<HTMLDivElement>,
   ) => void;
-  scrollPositions: React.MutableRefObject<{
-    backdrop: number;
-    decorations: number;
-    themes: number;
-  }>;
+  scrollPositions: React.MutableRefObject<Record<string, number>>;
 }
 
 const ScrollGridComponent = ({
@@ -33,23 +100,22 @@ const ScrollGridComponent = ({
   handleScroll,
   scrollPositions,
 }: ScrollGridProps) => {
-  // Restore scroll on every render
   useEffect(() => {
-    if (innerRef.current) {
-      innerRef.current.scrollLeft = scrollPositions.current[scrollKey];
+    if (innerRef?.current) {
+      innerRef.current.scrollLeft = scrollPositions.current[scrollKey] || 0;
     }
-  });
+  }, [innerRef, scrollKey, scrollPositions]);
 
   return (
     <div
-      ref={innerRef}
+      ref={innerRef ?? null}
       onScroll={(e) => handleScroll(scrollKey, e)}
       className="flex snap-x snap-mandatory space-x-4 overflow-x-auto pb-2"
     >
-      <div className="auto-cols grid grid-flow-col grid-rows-2 gap-4">
+      <div className="auto-cols grid grid-flow-col grid-rows-2 gap-4"> 
         {items.map((item) => (
-          <div key={item.title} className="snap-start">
-            <SelectionCard
+          <div key={item.key} className="snap-start w-full">
+            <ItemDisplay 
               item={item}
               selected={selectedCheck(item)}
               onSelect={onSelect}
@@ -63,6 +129,11 @@ const ScrollGridComponent = ({
 
 export const ScrollGrid = React.memo(ScrollGridComponent);
 
+
+// --------------------------------------------------------------------------
+// 4. MAIN COMPONENT (ReserveStep1Content)
+// --------------------------------------------------------------------------
+
 interface ReserveStep1ContentProps {
   data: Step1Data;
   onSubmit: (data: Step1Data) => void;
@@ -72,200 +143,170 @@ export default function ReserveStep1Content({
   data,
   onSubmit,
 }: ReserveStep1ContentProps) {
-  // ======= SAMPLE DATA =======
-  const backdrops: SelectionItem[] = [
-    {
-      src: "https://picsum.photos/id/1015/500/500",
-      title: "Round Arch",
-      category: "Backdrop",
-      price: 120,
-    },
-    {
-      src: "https://picsum.photos/id/1025/500/500",
-      title: "Mesh Wall",
-      category: "Backdrop",
-      price: 150,
-    },
-    {
-      src: "https://picsum.photos/id/1035/500/500",
-      title: "Circle Wall",
-      category: "Backdrop",
-      price: 130,
-    },
-    {
-      src: "https://picsum.photos/id/1045/500/500",
-      title: "Panel Arch",
-      category: "Backdrop",
-      price: 140,
-    },
-    {
-      src: "https://picsum.photos/id/1015/500/500",
-      title: "Round Arch2",
-      category: "Backdrop",
-      price: 120,
-    },
-    {
-      src: "https://picsum.photos/id/1025/500/500",
-      title: "Mesh Wall2",
-      category: "Backdrop",
-      price: 150,
-    },
-    {
-      src: "https://picsum.photos/id/1035/500/500",
-      title: "Circle Wall2",
-      category: "Backdrop",
-      price: 130,
-    },
-    {
-      src: "https://picsum.photos/id/1045/500/500",
-      title: "Panel Arch2",
-      category: "Backdrop",
-      price: 140,
-    },
-  ];
 
-  const decorations: SelectionItem[] = [
-    {
-      src: "https://picsum.photos/id/1055/500/500",
-      title: "Balloon Garland",
-      category: "Decoration",
-      price: 80,
-    },
-    {
-      src: "https://picsum.photos/id/1065/500/500",
-      title: "Floral Arrangement",
-      category: "Decoration",
-      price: 100,
-    },
-    {
-      src: "https://picsum.photos/id/1075/500/500",
-      title: "Neon Sign",
-      category: "Decoration",
-      price: 60,
-    },
-    {
-      src: "https://picsum.photos/id/1077/500/500",
-      title: "Handy Sign",
-      category: "Decoration",
-      price: 70,
-    },
-  ];
+  // Array to hold the results of all queries (manually defined for simplicity with static config)
+  const queryResults = CATEGORY_CONFIG.map(config => {
+    // 👈 This is the required useQuery structure:
+    const { data: rawItems, isLoading } = api.stock.getByCategory.useQuery(
+      { categoryId: config.id }, 
+      {
+        staleTime: 5 * 60 * 1000, // Optional: cache for 5 minutes
+        enabled: true, // Always run, as configuration is static
+      }
+    );
 
-  const themes: SelectionItem[] = [
-    {
-      src: "https://picsum.photos/id/1056/500/500",
-      title: "Pastel",
-      category: "Theme",
-      price: 10,
-    },
-    {
-      src: "https://picsum.photos/id/1057/500/500",
-      title: "Gold & White",
-      category: "Theme",
-      price: 20,
-    },
-    {
-      src: "https://picsum.photos/id/1058/500/500",
-      title: "Tropical",
-      category: "Theme",
-      price: 30,
-    },
-  ];
+    return {
+      config,
+      rawItems,
+      isLoading,
+    };
+  });
+  
+  const isLoading = queryResults.some(res => res.isLoading);
 
-  // ======= STATE =======
-  const [selectedBackdrop, setSelectedBackdrop] = useState<string | null>(
-    data.backdrop ? data.backdrop.title : null,
-  );
-  const [selectedDecorations, setSelectedDecorations] = useState<string[]>(
-    data.decorations ? data.decorations.map((d) => d.title) : [],
-  );
-  const [selectedTheme, setSelectedTheme] = useState<string | null>(
-    data.theme ? data.theme.title : null,
-  );
+  // --- Process and Organize Item Data ---
+  const itemMap = useMemo(() => {
+    const map: Record<string, SelectionItem[]> = {};
+    
+    queryResults.forEach(res => {
+      if (res.rawItems) {
+        map[res.config.stateKey] = res.rawItems.map(mapItemToSelectionItem);
+      }
+    });
+    return map;
+  }, [queryResults]); // Depend on queryResults array
+
+  // --- STATE MANAGEMENT ---
+  
+  const initialSelectionState = useMemo(() => {
+    const state: Record<string, string | string[] | null> = {};
+    
+    CATEGORY_CONFIG.forEach(config => {
+      const initialValue = data[config.stateKey as keyof Step1Data]; 
+      
+      if (config.selectionType === "single") {
+        state[config.stateKey] = (initialValue as SelectionItem)?.key ?? null;
+      } else {
+        state[config.stateKey] = (initialValue as SelectionItem[])?.map(d => d.key) ?? [];
+      }
+    });
+    
+    return state;
+  }, [data]);
+
+  const [selections, setSelections] = useState<Record<string, string | string[] | null>>(initialSelectionState);
   const [message, setMessage] = useState(data.message ?? "");
 
-  // ======= SCROLL STATE (shared across grids) =======
-  const scrollPositions = useRef({
-    backdrop: 0,
-    decorations: 0,
-    themes: 0,
-  });
-
-  const backdropRef = useRef<HTMLDivElement | null>(null);
-  const decorationsRef = useRef<HTMLDivElement | null>(null);
-  const themesRef = useRef<HTMLDivElement | null>(null);
-
-  // Store the scroll on scroll
-  const handleScroll = (
-    key: keyof typeof scrollPositions.current,
-    e: React.UIEvent<HTMLDivElement>,
-  ) => {
+  // --- SCROLL STATE & HANDLERS (Unchanged) ---
+  const scrollPositions = useRef<Record<string, number>>(
+    Object.fromEntries(CATEGORY_CONFIG.map(c => [c.stateKey, 0]))
+  );
+  
+  const categoryRefs = useRef<Record<string, React.RefObject<HTMLDivElement | null>>>(
+    Object.fromEntries(CATEGORY_CONFIG.map(c => [c.stateKey, React.createRef()]))
+  );
+  
+  const handleScroll = (key: string, e: React.UIEvent<HTMLDivElement>) => {
     scrollPositions.current[key] = e.currentTarget.scrollLeft;
   };
 
-  const handleNext = () => {
-    const setup: Step1Data = {
-      backdrop:
-        backdrops.find((b) => b.title === selectedBackdrop) ?? undefined,
-      decorations: decorations.filter((d) =>
-        selectedDecorations.includes(d.title),
-      ),
-      theme: themes.find((t) => t.title === selectedTheme) ?? undefined,
-      message,
-    };
-
-    onSubmit(setup);
+  const handleSelection = (item: SelectionItem, config: CategoryConfig) => {
+    const key = config.stateKey;
+    
+    setSelections(prev => {
+      const currentValue = prev[key];
+      
+      if (config.selectionType === "single") {
+        return {
+          ...prev,
+          [key]: currentValue === item.key ? null : item.key,
+        };
+      } else {
+        const currentArray = (currentValue || []) as string[];
+        const isSelected = currentArray.includes(item.key);
+        
+        return {
+          ...prev,
+          [key]: isSelected
+            ? currentArray.filter(k => k !== item.key)
+            : [...currentArray, item.key],
+        };
+      }
+    });
   };
+
+  // --- SUBMIT HANDLER ---
+  const handleNext = () => {
+    const finalSetup = CATEGORY_CONFIG.reduce((acc, config) => {
+        const selectedKeys = selections[config.stateKey];
+        const items = itemMap[config.stateKey] || [];
+        
+        if (config.selectionType === "single" && typeof selectedKeys === 'string' && selectedKeys) {
+            const selectedItem = items.find(i => i.key === selectedKeys);
+            (acc as Record<string, any>)[config.stateKey] = selectedItem;
+        } else if (config.selectionType === "multi" && Array.isArray(selectedKeys)) {
+            const selectedItems = items.filter(i => selectedKeys.includes(i.key));
+            (acc as Record<string, any>)[config.stateKey] = selectedItems;
+        }
+        
+        return acc;
+    }, { message } as Step1Data); 
+
+    onSubmit(finalSetup);
+  };
+  
+  const requiredCategory = CATEGORY_CONFIG.find(c => c.isRequired);
+  const isRequiredSelected = requiredCategory 
+    ? (selections[requiredCategory.stateKey] !== null && selections[requiredCategory.stateKey] !== undefined && selections[requiredCategory.stateKey] !== "")
+    : true; 
+
+  // --------------------------------------------------------------------------
+  // 🖥️ RENDER
+  // --------------------------------------------------------------------------
+  
+  if (isLoading) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <p className="animate-pulse text-lg text-gray-500">Loading item catalog...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
-      {/* Backdrop */}
-      <section>
-        <h2 className="mb-4 text-lg font-semibold">Choose a Backdrop</h2>
-        <ScrollGrid
-          items={backdrops}
-          selectedCheck={(i) => i.title === selectedBackdrop}
-          onSelect={(i) => setSelectedBackdrop(i.title)}
-          innerRef={backdropRef}
-          scrollKey="backdrop"
-          handleScroll={handleScroll}
-          scrollPositions={scrollPositions}
-        />
-      </section>
+      
+      {CATEGORY_CONFIG.map(config => {
+        const items = itemMap[config.stateKey] || [];
+        const isSingle = config.selectionType === "single";
+        const selectedKeys = selections[config.stateKey];
+        const isRequired = config.isRequired;
 
-      {/* Decorations */}
-      <section>
-        <h2 className="mb-4 text-lg font-semibold">Choose Decorations</h2>
-        <ScrollGrid
-          items={decorations}
-          selectedCheck={(i) => selectedDecorations.includes(i.title)}
-          onSelect={(i) =>
-            setSelectedDecorations((prev) =>
-              prev.includes(i.title)
-                ? prev.filter((t) => t !== i.title)
-                : [...prev, i.title],
-            )
-          }
-          innerRef={decorationsRef}
-          scrollKey="decorations"
-          handleScroll={handleScroll}
-          scrollPositions={scrollPositions}
-        />
-      </section>
-
-      {/* Themes */}
-      <section>
-        <h2 className="mb-4 text-lg font-semibold">Choose a Theme</h2>
-        <ScrollGrid
-          items={themes}
-          selectedCheck={(i) => i.title === selectedTheme}
-          onSelect={(i) => setSelectedTheme(i.title)}
-          innerRef={themesRef}
-          scrollKey="themes"
-          handleScroll={handleScroll}
-          scrollPositions={scrollPositions}
-        />
-      </section>
+        return (
+          <section key={config.stateKey}>
+            <h2 className="mb-4 text-lg font-semibold">
+              Choose {config.name} {isRequired ? "(Required)" : "(Optional)"}
+            </h2>
+            
+            {items.length > 0 ? (
+              <ScrollGrid
+                items={items}
+                selectedCheck={(i) => 
+                  isSingle 
+                    ? i.key === selectedKeys 
+                    : Array.isArray(selectedKeys) && selectedKeys.includes(i.key)
+                }
+                onSelect={(i) => handleSelection(i, config)}
+                innerRef={categoryRefs.current[config.stateKey]}
+                scrollKey={config.stateKey}
+                handleScroll={handleScroll}
+                scrollPositions={scrollPositions}
+              />
+            ) : (
+                <div className="text-gray-500 italic">No {config.name.toLowerCase()} available yet.</div>
+            )}
+          </section>
+        );
+      })}
 
       {/* Custom Message */}
       <section>
@@ -275,7 +316,7 @@ export default function ReserveStep1Content({
         <input
           type="text"
           placeholder="e.g., Happy Birthday"
-          className="w-full rounded-lg border border-gray-300 p-3 focus:ring-2 focus:ring-blue-400 focus:outline-none"
+          className="w-full rounded-lg border border-gray-300 p-3 focus:outline-none focus:ring-2 focus:ring-blue-400"
           value={message}
           onChange={(e) => setMessage(e.target.value)}
         />
@@ -285,9 +326,9 @@ export default function ReserveStep1Content({
       <div className="text-right">
         <button
           onClick={handleNext}
-          disabled={!selectedBackdrop}
+          disabled={!isRequiredSelected || isLoading}
           className={`rounded-lg px-6 py-3 font-semibold text-white transition-colors ${
-            selectedBackdrop
+            isRequiredSelected && !isLoading
               ? "bg-blue-600 hover:bg-blue-700"
               : "cursor-not-allowed bg-gray-400"
           }`}

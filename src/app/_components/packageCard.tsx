@@ -9,7 +9,6 @@ import {
   SheetHeader,
   SheetTitle,
 } from "~/components/ui/sheet";
-import PackageModal from "./packageModal";
 import DesktopOverlay from "./desktopOverlay";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 
