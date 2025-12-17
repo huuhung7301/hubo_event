@@ -10,7 +10,7 @@ import ReserveStep2Content from "../reserveForm/ReserveStep2Content";
 import ReserveStep3Content from "../reserveForm/ReserveStep3Content";
 import ReserveStep4Content from "../reserveForm/ReserveStep4Content";
 import ReserveStep5Content from "../reserveForm/ReserveStep5Content";
-import type { SelectionItem } from "../_components/selectionCard";
+import type { SelectionItem } from "../reserveForm/ReserveStep1Content";
 import { api } from "~/trpc/react";
 
 export interface ReservationItem {
