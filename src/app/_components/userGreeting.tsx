@@ -11,7 +11,7 @@ export default function UserGreeting() {
       {/* Greeting */}
       {isSignedIn && (
         <p className="font-semibold">
-          Hi, {user?.firstName || user?.username}
+          Hi, {user?.firstName ?? user?.username}
         </p>
       )}
 

@@ -121,7 +121,7 @@ export default function ItemDetailPage() {
           {/* --- IMAGE --- */}
           <div className="overflow-hidden rounded-2xl border bg-gray-100 shadow-2xl">
             <img
-              src={item.imageUrl || placeholderImage}
+              src={item.imageUrl ?? placeholderImage}
               alt={item.name}
               className="h-auto max-h-[600px] w-full object-cover"
             />

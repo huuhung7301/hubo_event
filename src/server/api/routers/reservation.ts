@@ -1,5 +1,20 @@
 import { z } from "zod";
 import { createTRPCRouter, publicProcedure } from "../trpc";
+
+// Define the common structure for an item being reserved
+const ReservationItemSchema = z.object({
+  key: z.string(),
+  quantity: z.number().default(1),
+  priceAtBooking: z.number(),
+});
+
+// Define the structured 'extra' field schema
+const ExtraSchema = z.object({
+  deliveryFee: z.number().optional().default(0),
+  // addOns now uses the strict ReservationItemSchema structure
+  addOns: z.array(ReservationItemSchema).optional(),
+});
+
 const updateReservationSchema = z.object({
   id: z.number(),
   workId: z.number().optional(),
@@ -14,42 +29,19 @@ const updateReservationSchema = z.object({
   address: z.string().optional(),
   suburb: z.string().optional(),
   postcode: z.string().optional(),
-  items: z
-    .array(
-      z.object({
-        key: z.string(),
-        quantity: z.number().default(1),
-        priceAtBooking: z.number(),
-      }),
-    )
-    .optional(),
-  optionalItems: z
-    .array(
-      z.object({
-        key: z.string(),
-        quantity: z.number().default(1),
-        priceAtBooking: z.number(),
-      }),
-    )
-    .optional(),
-  extra: z.any().optional(),
+  items: z.array(ReservationItemSchema).optional(),
+  optionalItems: z.array(ReservationItemSchema).optional(),
+  // FIX 1: Use the defined ExtraSchema instead of z.any()
+  extra: ExtraSchema.optional(),
   status: z.enum(["PENDING", "CONFIRMED", "CANCELLED"]).optional(),
   totalPrice: z.number().optional(),
 });
 
 type UpdateReservationInput = z.infer<typeof updateReservationSchema>;
-const ReservationExtraSchema = z.object({
-  addOns: z
-    .array(
-      // 🚀 FIX: Using z.record(z.unknown()) to represent a flexible JSON object
-      // This satisfies the compiler that it's a strongly-typed, generic object
-      // without requiring explicit fields like 'key' or 'title'.
-      z.record(z.unknown()),
-    )
-    .optional(),
 
-  deliveryFee: z.number().optional(),
-});
+// The ReservationExtraSchema was redundant and is replaced by ExtraSchema
+// const ReservationExtraSchema = z.object({ ... });
+
 export const reservationRouter = createTRPCRouter({
   // 🧩 Create a new reservation
 
@@ -66,38 +58,11 @@ export const reservationRouter = createTRPCRouter({
         reservationDate: z.string().datetime().optional(),
         postcode: z.string().optional(),
 
-        items: z.array(
-          z.object({
-            key: z.string(),
-            quantity: z.number().default(1),
-            priceAtBooking: z.number(),
-          }),
-        ),
-        optionalItems: z
-          .array(
-            z.object({
-              key: z.string(),
-              quantity: z.number().default(1),
-              priceAtBooking: z.number(),
-            }),
-          )
-          .optional(),
+        items: z.array(ReservationItemSchema),
+        optionalItems: z.array(ReservationItemSchema).optional(),
 
-        // FIX 1: Redefine 'extra' as an OBJECT containing deliveryFee and addOns array
-        extra: z
-          .object({
-            deliveryFee: z.number().optional().default(0),
-            addOns: z
-              .array(
-                z.object({
-                  key: z.string(),
-                  quantity: z.number().default(1),
-                  priceAtBooking: z.number(),
-                }),
-              )
-              .optional(),
-          })
-          .optional(),
+        // Use the strict ExtraSchema here
+        extra: ExtraSchema.optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -109,7 +74,7 @@ export const reservationRouter = createTRPCRouter({
         0,
       );
 
-      // FIX 2: Access addOns array correctly and calculate price (matching items structure)
+      // Access addOns array correctly and calculate price (matching items structure)
       const addOns = input.extra?.addOns ?? [];
       const addOnPrice = addOns.reduce(
         (sum, a) => sum + a.priceAtBooking * a.quantity,
@@ -117,11 +82,13 @@ export const reservationRouter = createTRPCRouter({
       );
       totalPrice += addOnPrice;
 
-      // FIX 3: Access deliveryFee correctly
+      // Access deliveryFee correctly
       const deliveryFee = input.extra?.deliveryFee ?? 0;
       totalPrice += deliveryFee;
 
       // 2. Create the reservation record
+      // FIX 2: Removed all 'as any' casts. TypeScript now infers the correct
+      // type for items, optionalItems, and extra based on the Zod input and Prisma's JSON type handling.
       const reservation = await ctx.db.reservation.create({
         data: {
           userId: input.userId,
@@ -131,17 +98,15 @@ export const reservationRouter = createTRPCRouter({
           customerPhone: input.customerPhone ?? null,
           notes: input.notes ?? null,
           totalPrice,
-          // NOTE: items and optionalItems should be compatible with your DB JSON/Array types
-          items: input.items as any,
-          optionalItems: input.optionalItems ?? ([] as any),
+          items: input.items,
+          optionalItems: input.optionalItems ?? [],
 
           reservationDate: input.reservationDate
             ? new Date(input.reservationDate)
             : null,
           postcode: input.postcode ?? null,
 
-          // FIX 4: Save the entire structured 'extra' object
-          extra: (input.extra as any) ?? {},
+          extra: input.extra ?? {},
         },
       });
 
@@ -216,12 +181,16 @@ export const reservationRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const { id, ...rest } = input;
 
+      // FIX 3: Remove unnecessary JSON serialization and rely on input types
       const dataToUpdate: Partial<Omit<UpdateReservationInput, "id">> = {
         ...rest,
+        // Convert reservationDate string to ISO string for database
         reservationDate: rest.reservationDate
           ? new Date(rest.reservationDate).toISOString()
           : undefined,
-        extra: rest.extra ? JSON.parse(JSON.stringify(rest.extra)) : undefined,
+        // Prisma handles JSON fields (items, optionalItems, extra) directly
+        // Ensure 'extra' is passed as an object or undefined, not null
+        extra: rest.extra, 
       };
 
       return ctx.db.reservation.update({

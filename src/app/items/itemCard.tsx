@@ -25,7 +25,7 @@ export const ItemCard: FC<{ item: ItemListing }> = ({ item }) => {
       <Link href={`/items/${item.key}`} className="block">
         <div className="h-48 overflow-hidden">
           <img
-            src={item.imageUrl || "https://placehold.co/600x400/9CA3AF/FFFFFF?text=No+Image"}
+            src={item.imageUrl ?? "https://placehold.co/600x400/9CA3AF/FFFFFF?text=No+Image"}
             alt={item.name}
             className="h-full w-full object-cover group-hover:scale-105 transition duration-500"
           />

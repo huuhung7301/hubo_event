@@ -102,7 +102,7 @@ const ScrollGridComponent = ({
 }: ScrollGridProps) => {
   useEffect(() => {
     if (innerRef?.current) {
-      innerRef.current.scrollLeft = scrollPositions.current[scrollKey] || 0;
+      innerRef.current.scrollLeft = scrollPositions.current[scrollKey] ?? 0;
     }
   }, [innerRef, scrollKey, scrollPositions]);
 
@@ -222,7 +222,7 @@ export default function ReserveStep1Content({
           [key]: currentValue === item.key ? null : item.key,
         };
       } else {
-        const currentArray = (currentValue || []) as string[];
+        const currentArray = (currentValue ?? []) as string[];
         const isSelected = currentArray.includes(item.key);
         
         return {
@@ -236,21 +236,23 @@ export default function ReserveStep1Content({
   };
 
   // --- SUBMIT HANDLER ---
-  const handleNext = () => {
+const handleNext = () => {
     const finalSetup = CATEGORY_CONFIG.reduce((acc, config) => {
         const selectedKeys = selections[config.stateKey];
-        const items = itemMap[config.stateKey] || [];
+        const items = itemMap[config.stateKey] ?? [];
         
         if (config.selectionType === "single" && typeof selectedKeys === 'string' && selectedKeys) {
             const selectedItem = items.find(i => i.key === selectedKeys);
-            (acc as Record<string, any>)[config.stateKey] = selectedItem;
+            // This assignment is now safe because 'acc' is cast as Step1Data 
+            // which has the index signature, and selectedItem matches a potential value type.
+            acc[config.stateKey] = selectedItem;
         } else if (config.selectionType === "multi" && Array.isArray(selectedKeys)) {
             const selectedItems = items.filter(i => selectedKeys.includes(i.key));
-            (acc as Record<string, any>)[config.stateKey] = selectedItems;
+            acc[config.stateKey] = selectedItems;
         }
         
         return acc;
-    }, { message } as Step1Data); 
+    }, { message } as Step1Data); // The final cast is what matters
 
     onSubmit(finalSetup);
   };
@@ -276,7 +278,7 @@ export default function ReserveStep1Content({
     <div className="space-y-8">
       
       {CATEGORY_CONFIG.map(config => {
-        const items = itemMap[config.stateKey] || [];
+        const items = itemMap[config.stateKey] ?? [];
         const isSingle = config.selectionType === "single";
         const selectedKeys = selections[config.stateKey];
         const isRequired = config.isRequired;
