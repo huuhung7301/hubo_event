@@ -4,7 +4,10 @@ import Link from "next/link";
 import { useCart } from "~/store/useCart";
 
 export const ItemCard: FC<{ item: ItemListing }> = ({ item }) => {
-  const price = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(item.basePrice);
+  const price = new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+  }).format(item.basePrice);
   const addItem = useCart((s) => s.addItem);
 
   const handleAddToCart = () => {
@@ -15,44 +18,47 @@ export const ItemCard: FC<{ item: ItemListing }> = ({ item }) => {
       imageUrl: item.imageUrl ?? undefined,
       quantity: 1,
     });
-
-    // Log the entire cart
-    console.log("Current cart:", useCart.getState().items);
   };
 
   return (
-    <div className="group rounded-2xl bg-white border shadow-sm hover:shadow-xl hover:border-indigo-400 transition overflow-hidden">
+    <div className="group overflow-hidden rounded-2xl border bg-white shadow-sm transition hover:border-indigo-400 hover:shadow-xl">
       <Link href={`/items/${item.key}`} className="block">
         <div className="h-48 overflow-hidden">
           <img
-            src={item.imageUrl ?? "https://placehold.co/600x400/9CA3AF/FFFFFF?text=No+Image"}
+            src={
+              item.imageUrl ??
+              "https://placehold.co/600x400/9CA3AF/FFFFFF?text=No+Image"
+            }
             alt={item.name}
-            className="h-full w-full object-cover group-hover:scale-105 transition duration-500"
+            className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
           />
         </div>
       </Link>
 
-      <div className="p-4 space-y-2">
-        <div className="flex justify-between items-center gap-2">
-          <p className="text-md font-semibold text-gray-900 truncate">{item.name}</p>
+      <div className="space-y-2 p-4">
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-md truncate font-semibold text-gray-900">
+            {item.name}
+          </p>
 
           {item.category && (
-            <span className="text-xs bg-indigo-100 text-indigo-800 px-2 py-1 rounded-full whitespace-nowrap">
+            <span className="rounded-full bg-indigo-100 px-2 py-1 text-xs whitespace-nowrap text-indigo-800">
               {item.category.name}
             </span>
           )}
         </div>
 
         <p className="text-sm text-gray-500">
-          <span className="font-mono text-gray-700">{item.key}</span> • per {item.unit ?? "EA"}
+          <span className="font-mono text-gray-700">{item.key}</span> • per{" "}
+          {item.unit ?? "EA"}
         </p>
 
-        <div className="flex justify-between items-center pt-3 border-t">
-          <span className="text-xl font-medium ">{price}</span>
+        <div className="flex items-center justify-between border-t pt-3">
+          <span className="text-xl font-medium">{price}</span>
 
           <div className="flex gap-2">
             <button
-              className="text-sm bg-gray-200 text-gray-800 px-3 py-1.5 rounded-lg hover:bg-gray-300 transition"
+              className="rounded-lg bg-gray-200 px-3 py-1.5 text-sm text-gray-800 transition hover:bg-gray-300"
               onClick={handleAddToCart}
             >
               Add to Cart

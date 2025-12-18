@@ -84,7 +84,6 @@ export default function ItemDetailPage() {
   // ---------------------------
   const handleAdd = () => {
     const fullCart = useCart.getState().items;
-    console.log("Full cart:", fullCart);
 
     addItem({
       key: item.key,

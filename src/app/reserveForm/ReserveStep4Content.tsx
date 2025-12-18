@@ -180,7 +180,6 @@ export default function ReserveStep4Content({
     try {
       if (reservationId) {
         // --- SCENARIO 1: UPDATE EXISTING RESERVATION ---
-        console.log("Updating existing reservation:", reservationId);
         await updateMutation.mutateAsync({
           id: reservationId,
           // Use the separated items/optionalItems structure for UPDATE
@@ -205,9 +204,7 @@ export default function ReserveStep4Content({
       } else {
         // --- SCENARIO 2: CREATE NEW RESERVATION ---
         const NEW_WORK_ID = 0;
-
-        console.log("Creating new reservation for workId:", NEW_WORK_ID);
-
+        
         await createMutation.mutateAsync({
           userId: step2Data.customerEmail,
           workId: NEW_WORK_ID,

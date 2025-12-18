@@ -7,7 +7,6 @@ import FilteredArea from "./_components/filteredArea";
 export default async function Home() {
   const works = await api.work.getAllWorks();
   const categories = await api.work.getAllCategories();
-  console.log("aaa", works)
   void api.post.getLatest.prefetch();
 
   return (

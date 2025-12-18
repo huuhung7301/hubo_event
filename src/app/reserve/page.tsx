@@ -83,7 +83,6 @@ export default function ReservePage() {
     setStep1Data(data); 
     setCurrentStep(2);
   };
-  console.log("Reservation data:", step1Data);
 
   // --- Step 2: Check Availability ---
   const [step2Data, setStep2Data] = useState<Step2Data>({
@@ -113,7 +112,6 @@ export default function ReservePage() {
 
   const handleStep3Submit = (data: { addOns: SelectionItem[] }) => {
     setStep3Data(data);
-    console.log("Step 3 data submitted:", data);
     setCurrentStep(4);
   };
 

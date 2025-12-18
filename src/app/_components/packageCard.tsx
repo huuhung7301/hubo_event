@@ -42,9 +42,7 @@ export default function PackageCard({
   const [open, setOpen] = useState(false);
 
   const [isDesktop, setIsDesktop] = useState(true);
-  console.log("items", items);
-  console.log("optionalItems", optionalItems);
-  console.log("totalPrice", totalPrice);
+
   useEffect(() => {
     const media = window.matchMedia("(min-width: 768px)");
     setIsDesktop(media.matches);
