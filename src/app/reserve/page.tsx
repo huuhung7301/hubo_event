@@ -124,7 +124,6 @@ export default function ReservePage() {
   ];
 
   return (
-    <Suspense>
     <div
       className="relative flex min-h-screen items-center justify-center px-4 py-12"
       style={{
@@ -199,6 +198,5 @@ export default function ReservePage() {
         )}
       </div>
     </div>
-    </Suspense>
   );
 }

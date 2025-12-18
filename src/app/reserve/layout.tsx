@@ -1,6 +1,6 @@
 // /app/reserve/layout.tsx
 import type { Metadata } from "next";
-
+import { Suspense } from "react";
 export const metadata: Metadata = {
   title: "Create Your Own Decoration Package | U-Events",
   description:
@@ -37,5 +37,5 @@ export default function ReserveLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return children;
+  return <Suspense>{children}</Suspense>;
 }
