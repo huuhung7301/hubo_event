@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams, useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useUser } from "@clerk/nextjs";
 import StepTracker from "../reserveForm/StepTracker";
 import ExistingReservationSummary from "../reserveForm/ExistingReservationSummary";
@@ -124,6 +124,7 @@ export default function ReservePage() {
   ];
 
   return (
+    <Suspense>
     <div
       className="relative flex min-h-screen items-center justify-center px-4 py-12"
       style={{
@@ -198,5 +199,6 @@ export default function ReservePage() {
         )}
       </div>
     </div>
+    </Suspense>
   );
 }
