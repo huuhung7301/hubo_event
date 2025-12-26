@@ -1,5 +1,5 @@
 "use client";
-
+import Image from "next/image";
 export interface SelectionItem {
   src: string;
   title: string;
@@ -26,10 +26,12 @@ export default function SelectionCardComponent({ item, selected = false, onSelec
         border-transparent w-36"
     >
       {/* Image */}
-      <img
+      <Image
         src={item.src}
         alt={item.title}
         className="h-36 object-cover"
+        width={400}
+        height={400}  
       />
 
       {/* Overlay tick if selected */}

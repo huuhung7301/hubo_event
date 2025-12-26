@@ -1,7 +1,7 @@
 "use client";
 
-import React from "react";
 import type { ReservationItem } from "../reserve/page";
+import Image from "next/image";
 
 interface ExistingReservationSummaryProps {
   items: ReservationItem[];
@@ -37,10 +37,12 @@ export default function ExistingReservationSummary({
       <h2 className="text-center text-2xl font-semibold text-gray-900">
         Your Existing Reservation
       </h2>
-      <img
+      <Image  
         src={imageUrl}
         className="h-auto w-full rounded object-cover"
-        alt=""
+        alt="Image"
+        width={600}
+        height={400}
       />
       {/* Main Items */}
       <div>

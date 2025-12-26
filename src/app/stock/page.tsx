@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { api } from "~/trpc/react";
+import Image from "next/image";
 
 interface ItemCategory {
   id: number;
@@ -231,10 +232,12 @@ export default function AdminStockPage() {
             <label className="mb-1 font-medium">Upload Image</label>
             <input type="file" accept="image/*" onChange={handleImageChange} />
             {formData.imageUrl && (
-              <img
+              <Image
                 src={formData.imageUrl}
                 alt="Preview"
                 className="mt-2 h-24 w-24 rounded border object-cover"
+                width={96}
+                height={96}
               />
             )}
           </div>
@@ -296,10 +299,12 @@ export default function AdminStockPage() {
           >
             <div className="flex items-center gap-4">
               {item.imageUrl && (
-                <img
+                <Image
                   src={item.imageUrl}
                   alt={item.name}
                   className="h-16 w-16 rounded object-cover"
+                  width={64}
+                  height={64}
                 />
               )}
               <div>

@@ -4,6 +4,7 @@ import React, { useState, useMemo, useCallback } from "react";
 import { Plus, Trash2, Edit, Search } from "lucide-react";
 import { WorkModal } from "./workmodal";
 import { api } from "~/trpc/react";
+import Image from "next/image";
 
 // --- 1. TYPE DEFINITIONS (same as before) ---
 export interface Category {
@@ -240,9 +241,12 @@ const App: React.FC = () => {
               className="flex flex-col md:flex-row items-start md:items-center justify-between bg-white p-4 rounded-xl shadow-lg border"
             >
               <div className="flex items-start gap-4 flex-1">
-                <img
+                <Image
                   src={work.imageUrl}
+                  alt={work.title || "Work image"}
                   className="h-20 w-20 rounded-lg object-cover border"
+                  width={80}
+                  height={80}
                   onError={(e) => {
                     e.currentTarget.src =
                       "https://placehold.co/80x80?text=IMG";

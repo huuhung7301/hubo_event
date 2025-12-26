@@ -5,6 +5,7 @@ import type { PackageItem } from "./packageCard";
 import { useRouter } from "next/navigation";
 import { useUser, useClerk, SignInButton } from "@clerk/nextjs";
 import { api } from "~/trpc/react";
+import Image from "next/image";
 
 interface MobileOverlayProps {
   onClose: () => void;
@@ -113,10 +114,12 @@ export default function MobileOverlay({
       <div className="flex-1 overflow-y-auto px-4 pb-36">
         {/* Image */}
         <div className="mb-4 p-6 pt-0">
-          <img
+          <Image
             src={src}
             alt={title}
             className="aspect-square w-full rounded-lg object-cover"
+            width={400}
+            height={400}
           />
         </div>
 

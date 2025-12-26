@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useUser, useClerk, SignInButton } from "@clerk/nextjs";
 import { api } from "~/trpc/react";
 import type { PackageItem } from "./packageCard";
+import Image from "next/image";
 
 interface DesktopOverlayProps {
   onClose: () => void;
@@ -120,10 +121,12 @@ const handleReserve = async () => {
 
         {/* Left: image */}
         <div className="flex w-full items-center justify-center bg-gray-100 p-6 md:w-1/2">
-          <img
+          <Image
             src={src}
             alt={title}
-            className="h-[400px] w-full rounded-lg object-cover"
+            className="w-full rounded-lg object-cover"
+            width={400}
+            height={400}
           />
         </div>
 

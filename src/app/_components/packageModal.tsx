@@ -1,7 +1,7 @@
 "use client";
 
 import type { PackageItem } from "./packageCard";
-
+import Image from "next/image";
 interface PackageModalProps {
   open: boolean;
   onClose: () => void;
@@ -40,10 +40,12 @@ export default function PackageModal({
 
         {/* Image Section */}
         <div className="md:w-1/2 w-full bg-black flex items-center justify-center">
-          <img
+          <Image
             src={src}
             alt={title}
             className="w-full h-full object-contain max-h-[80vh]"
+            width={400}
+            height={400}
           />
         </div>
 

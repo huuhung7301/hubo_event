@@ -5,7 +5,7 @@ import { useCart } from "~/store/useCart";
 import type { CartItem } from "~/store/useCart";
 import { Trash2, Plus, Minus, ShoppingBag } from "lucide-react";
 import { useMemo } from "react";
-
+import Image from "next/image";
 export default function CartPage() {
   const { items, addItem, removeItem, clear } = useCart();
 
@@ -40,10 +40,12 @@ export default function CartPage() {
             key={item.key}
             className="flex items-center gap-4 rounded-xl bg-white p-4 shadow-sm border"
           >
-            <img
+            <Image  
               src={item.imageUrl ?? "https://placehold.co/100x100/9CA3AF/FFFFFF?text=No+Image"}
               alt={item.name}
               className="w-24 h-24 object-cover rounded-lg"
+              width={100}
+              height={100}  
             />
             <div className="flex-1">
               <h2 className="text-lg font-semibold text-gray-900">{item.name}</h2>

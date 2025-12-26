@@ -2,6 +2,7 @@ import type { FC } from "react";
 import type { ItemListing } from "./page";
 import Link from "next/link";
 import { useCart } from "~/store/useCart";
+import Image from "next/image";
 
 export const ItemCard: FC<{ item: ItemListing }> = ({ item }) => {
   const price = new Intl.NumberFormat("en-US", {
@@ -24,13 +25,15 @@ export const ItemCard: FC<{ item: ItemListing }> = ({ item }) => {
     <div className="group overflow-hidden rounded-2xl border bg-white shadow-sm transition hover:border-indigo-400 hover:shadow-xl">
       <Link href={`/items/${item.key}`} className="block">
         <div className="h-48 overflow-hidden">
-          <img
+          <Image
             src={
               item.imageUrl ??
               "https://placehold.co/600x400/9CA3AF/FFFFFF?text=No+Image"
             }
             alt={item.name}
             className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+            width={600}
+            height={400}
           />
         </div>
       </Link>

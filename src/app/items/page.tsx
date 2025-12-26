@@ -86,7 +86,7 @@ export default function ItemListingPage() {
     <div className="min-h-screen bg-white">
       {/* ====================== NAVBAR ====================== */}
       <header className="sticky top-0 z-20 mx-auto flex w-[95%] items-center justify-between border-b bg-white py-4 lg:w-[80%]">
-        <h1 className="text-xl font-bold">Hubo Events</h1>
+        <h1 className="text-xl font-bold">U-Events</h1>
 
         <nav className="hidden gap-8 text-sm md:flex">
           <Link href="/" className="hover:text-indigo-600">

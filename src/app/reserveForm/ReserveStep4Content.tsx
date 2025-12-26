@@ -4,6 +4,7 @@ import { useState } from "react";
 // Removed explicit imports for SelectionItem and ReservationItem
 import type { Step1Data, Step2Data, Step3Data } from "../reserve/page";
 import { api } from "~/trpc/react";
+import Image from "next/image";
 
 // --- NEW LOCAL TYPES ---
 
@@ -107,10 +108,12 @@ export default function ReserveStep4Content({
       className="flex items-center justify-between gap-4 rounded-lg border border-gray-200 bg-white/60 p-3 shadow-sm"
     >
       <div className="flex items-center gap-3">
-        <img
+        <Image
           src={item.src}
           alt={item.title}
           className="h-16 w-16 rounded-lg object-cover"
+          width={64}
+          height={64}
         />
         <div>
           <p className="font-medium text-gray-800">{item.title}</p>

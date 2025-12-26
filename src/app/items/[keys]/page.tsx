@@ -5,6 +5,7 @@ import Link from "next/link";
 import { api } from "~/trpc/react";
 import { useParams } from "next/navigation";
 import { useCart } from "~/store/useCart";
+import Image from "next/image";
 
 export default function ItemDetailPage() {
   const params = useParams();
@@ -104,7 +105,7 @@ export default function ItemDetailPage() {
     <div className="min-h-screen bg-white">
       {/* ====================== NAVBAR ====================== */}
       <header className="sticky top-0 z-20 mx-auto flex w-[95%] items-center justify-between border-b bg-white py-4 lg:w-[80%]">
-        <h1 className="text-xl font-bold">Hubo Events</h1>
+        <h1 className="text-xl font-bold">U-Events</h1>
 
         <Link
           href="/items"
@@ -119,10 +120,12 @@ export default function ItemDetailPage() {
         <div className="grid grid-cols-1 gap-12 lg:grid-cols-2">
           {/* --- IMAGE --- */}
           <div className="overflow-hidden rounded-2xl border bg-gray-100 shadow-2xl">
-            <img
+            <Image
               src={item.imageUrl ?? placeholderImage}
               alt={item.name}
               className="h-auto max-h-[600px] w-full object-cover"
+              width={800}
+              height={600}
             />
           </div>
 

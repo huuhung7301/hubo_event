@@ -15,7 +15,7 @@ export default async function Home() {
         <div className="flex min-h-screen flex-col font-sans">
           {/* Navbar */}
           <header className="mx-auto flex w-[95%] items-center justify-between border-b py-4 lg:w-[80%]">
-            <h1 className="text-lg font-bold">Hubo Events</h1>
+            <h1 className="text-lg font-bold">U-Events</h1>
             <nav className="text-sm flex-shrink-0">
               <UserGreeting />
             </nav>

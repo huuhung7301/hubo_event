@@ -11,6 +11,7 @@ import {
 } from "~/components/ui/sheet";
 import DesktopOverlay from "./desktopOverlay";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
+import Image from "next/image";
 
 export interface PackageItem {
   name: string;
@@ -37,7 +38,7 @@ export default function PackageCard({
   optionalItems = [],
   totalPrice,
   notes,
-  workId
+  workId,
 }: PackageCardProps) {
   const [open, setOpen] = useState(false);
 
@@ -58,11 +59,14 @@ export default function PackageCard({
         onClick={() => setOpen(true)}
         className="group relative cursor-pointer overflow-hidden rounded-lg shadow-md"
       >
-        <img
-          src={src}
+        <Image
+          src={src && src !== "nil" ? src : "/place-holder.png"}
           alt={title}
-          className="h-48 sm:h-72 w-full object-cover transition-transform duration-500 group-hover:scale-105"
+          className="h-48 w-full object-cover transition-transform duration-500 group-hover:scale-105 sm:h-72"
+          width={400}
+          height={300}
         />
+
         <div className="absolute bottom-0 left-0 w-full translate-y-full bg-black/70 p-4 text-white transition-transform duration-500 ease-out group-hover:translate-y-0">
           <h3 className="text-lg font-semibold">{title}</h3>
         </div>
@@ -71,7 +75,7 @@ export default function PackageCard({
       {/* Desktop Modal */}
       {isDesktop && (
         <Dialog open={open} onOpenChange={setOpen}>
-          <DialogContent className="!max-w-[70vw] rounded-2xl shadow-lg border-0 ">
+          <DialogContent className="!max-w-[70vw] rounded-2xl border-0 shadow-lg">
             <DialogTitle className="">
               <VisuallyHidden> {title}</VisuallyHidden>
             </DialogTitle>

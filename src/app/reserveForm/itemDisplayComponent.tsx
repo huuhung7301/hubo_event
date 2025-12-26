@@ -1,4 +1,5 @@
 import React from 'react';
+import Image from "next/image";
 
 // Assuming this interface is shared via a types file or defined here
 export interface SelectionItem {
@@ -31,10 +32,12 @@ export const ItemDisplayComponent: React.FC<ItemDisplayProps> = ({ item, selecte
       `}
     >
       {/* Image (h-36 matches the required height) */}
-      <img
+      <Image
         src={item.src}
         alt={item.title}
         className="h-36 w-full object-cover"
+        width={144}
+        height={144}
       />
 
       {/* Overlay tick if selected */}

@@ -5,6 +5,7 @@ import { X, Upload } from "lucide-react";
 import type { WorkInputDTO, Category, Item } from "./page";
 import { ItemListManager } from "./itemListManager";
 import { api } from "~/trpc/react";
+import Image from "next/image";
 
 interface WorkModalProps {
   work: WorkInputDTO | null;
@@ -189,10 +190,12 @@ export const WorkModal: React.FC<WorkModalProps> = ({
               <div className="flex flex-col gap-2">
                 {/* Current Preview */}
                 {formData.imageUrl && (
-                  <img
+                  <Image
                     src={formData.imageUrl}
                     alt="preview"
                     className="h-40 w-full rounded-lg object-cover shadow"
+                    width={160}
+                    height={160}
                   />
                 )}
 
