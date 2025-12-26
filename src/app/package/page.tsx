@@ -90,7 +90,7 @@ const App: React.FC = () => {
 
   // ============ MODAL STATE ============
   const [currentWorkData, setCurrentWorkData] = useState<WorkInputDTO | null>(
-    null
+    null,
   );
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -109,7 +109,7 @@ const App: React.FC = () => {
         createWork.mutate(data);
       }
     },
-    [createWork, updateWork]
+    [createWork, updateWork],
   );
 
   // ---------------------------------------------
@@ -161,13 +161,13 @@ const App: React.FC = () => {
       results = results.filter(
         (w) =>
           w.title.toLowerCase().includes(keyword) ||
-          w.notes?.toLowerCase().includes(keyword)
+          w.notes?.toLowerCase().includes(keyword),
       );
     }
 
     if (categoryId) {
       results = results.filter((w) =>
-        w.categories.some((c) => c.categoryId === categoryId)
+        w.categories.some((c) => c.categoryId === categoryId),
       );
     }
 
@@ -183,32 +183,32 @@ const App: React.FC = () => {
   // RENDER UI
   // --------------------------------------------------------------------
   return (
-    <div className="min-h-screen bg-gray-50 p-4 sm:p-8 font-sans">
-      <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
-        <h1 className="text-3xl font-extrabold text-gray-800 mb-4 sm:mb-0">
+    <div className="min-h-screen bg-gray-50 p-4 font-sans sm:p-8">
+      <header className="mb-6 flex flex-col items-start justify-between sm:flex-row sm:items-center">
+        <h1 className="mb-4 text-3xl font-extrabold text-gray-800 sm:mb-0">
           Work Catalog Management
         </h1>
 
         <button
           onClick={handleOpenCreate}
-          className="flex items-center gap-2 rounded-xl bg-indigo-600 px-6 py-3 text-white shadow-lg hover:bg-indigo-700 transition"
+          className="flex items-center gap-2 rounded-xl bg-indigo-600 px-6 py-3 text-white shadow-lg transition hover:bg-indigo-700"
         >
           <Plus size={20} /> Add New Work
         </button>
       </header>
 
       {/* FILTERS */}
-      <div className="mb-6 flex flex-col md:flex-row gap-4 p-4 bg-white rounded-xl shadow-md border">
+      <div className="mb-6 flex flex-col gap-4 rounded-xl border bg-white p-4 shadow-md md:flex-row">
         <div className="relative flex-1">
           <Search
             size={20}
-            className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+            className="absolute top-1/2 left-3 -translate-y-1/2 transform text-gray-400"
           />
           <input
             placeholder="Search by Title or Notes..."
             value={filterKeyword}
             onChange={(e) => setFilterKeyword(e.target.value)}
-            className="w-full rounded-lg border-gray-300 pl-10 pr-4 py-2"
+            className="w-full rounded-lg border-gray-300 py-2 pr-4 pl-10"
           />
         </div>
 
@@ -229,8 +229,8 @@ const App: React.FC = () => {
       {/* WORK LIST */}
       <div className="space-y-4">
         {filteredWorks.length === 0 ? (
-          <div className="text-center p-10 bg-white rounded-xl shadow-md">
-            <p className="text-gray-500 italic text-lg">
+          <div className="rounded-xl bg-white p-10 text-center shadow-md">
+            <p className="text-lg text-gray-500 italic">
               No works found matching your criteria.
             </p>
           </div>
@@ -238,30 +238,29 @@ const App: React.FC = () => {
           filteredWorks.map((work) => (
             <div
               key={work.id}
-              className="flex flex-col md:flex-row items-start md:items-center justify-between bg-white p-4 rounded-xl shadow-lg border"
+              className="flex flex-col items-start justify-between rounded-xl border bg-white p-4 shadow-lg md:flex-row md:items-center"
             >
-              <div className="flex items-start gap-4 flex-1">
-                <Image
-                  src={work.imageUrl}
+              <div className="flex flex-1 items-start gap-4">
+                <img
+                  src={work.imageUrl || "https://placehold.co/80x80?text=IMG"}
                   alt={work.title || "Work image"}
-                  className="h-20 w-20 rounded-lg object-cover border"
+                  className="h-20 w-20 rounded-lg border object-cover"
                   width={80}
                   height={80}
                   onError={(e) => {
-                    e.currentTarget.src =
-                      "https://placehold.co/80x80?text=IMG";
+                    e.currentTarget.src = "https://placehold.co/80x80?text=IMG";
                   }}
                 />
 
-                <div className="flex-1 min-w-0">
-                  <p className="font-bold text-xl">{work.title}</p>
-                  <p className="text-sm text-gray-500 mb-2">{work.notes}</p>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xl font-bold">{work.title}</p>
+                  <p className="mb-2 text-sm text-gray-500">{work.notes}</p>
 
                   <div className="flex flex-wrap gap-2">
                     {work.categories.map((wc) => (
                       <span
                         key={wc.categoryId}
-                        className="text-xs bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full"
+                        className="rounded-full bg-indigo-100 px-3 py-1 text-xs text-indigo-800"
                       >
                         {wc.category.name}
                       </span>
@@ -271,16 +270,16 @@ const App: React.FC = () => {
               </div>
 
               {/* BUTTONS */}
-              <div className="flex gap-2 mt-4 md:mt-0">
+              <div className="mt-4 flex gap-2 md:mt-0">
                 <button
                   onClick={() => handleEdit(work)}
-                  className="flex items-center gap-1 bg-yellow-500 px-4 py-2 text-white rounded-lg"
+                  className="flex items-center gap-1 rounded-lg bg-yellow-500 px-4 py-2 text-white"
                 >
                   <Edit size={16} /> Edit
                 </button>
                 <button
                   onClick={() => handleDelete(work.id, work.title)}
-                  className="flex items-center gap-1 bg-red-500 px-4 py-2 text-white rounded-lg"
+                  className="flex items-center gap-1 rounded-lg bg-red-500 px-4 py-2 text-white"
                 >
                   <Trash2 size={16} /> Delete
                 </button>
