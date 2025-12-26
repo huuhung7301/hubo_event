@@ -13,6 +13,7 @@ export const workRouter = createTRPCRouter({
   // 🧭 Get all works with related data
   getAllWorks: publicProcedure.query(async ({ ctx }) => {
     const works = await ctx.db.work.findMany({
+      where: {id: {not: 0}},
       include: {
         categories: { include: { category: true } },
         items: { include: { item: true } },
