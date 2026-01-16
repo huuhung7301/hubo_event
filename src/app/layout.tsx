@@ -45,6 +45,9 @@ export default function RootLayout({
   return (
     <ClerkProvider>
       <html lang="en" className={geist.variable}>
+        <head>
+          <meta name="google-site-verification" content="iGktgfgv5-e_VCStfcpI8LEWYcqPtXTp1TunpAKjVmA" />
+        </head>
         <body>
           <TRPCReactProvider>{children}</TRPCReactProvider>
         </body>
