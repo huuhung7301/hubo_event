@@ -1,5 +1,8 @@
 import { z } from "zod";
 import { createTRPCRouter, publicProcedure } from "../trpc";
+import { Resend } from 'resend';
+
+const resend = new Resend('re_MFv1vW2y_ed5pfy1SyRV4eKjpv8pviVfw');
 
 // Define the common structure for an item being reserved
 const ReservationItemSchema = z.object({
@@ -54,41 +57,31 @@ export const reservationRouter = createTRPCRouter({
         customerEmail: z.string().optional(),
         customerPhone: z.string().optional(),
         notes: z.string().optional(),
-
         reservationDate: z.string().datetime().optional(),
         postcode: z.string().optional(),
-
         items: z.array(ReservationItemSchema),
         optionalItems: z.array(ReservationItemSchema).optional(),
-
-        // Use the strict ExtraSchema here
         extra: ExtraSchema.optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
       // 1. Calculate totalPrice
-
-      // Base items and optional items
       let totalPrice = [...input.items, ...(input.optionalItems ?? [])].reduce(
         (sum, i) => sum + i.priceAtBooking * i.quantity,
         0,
       );
 
-      // Access addOns array correctly and calculate price (matching items structure)
       const addOns = input.extra?.addOns ?? [];
       const addOnPrice = addOns.reduce(
         (sum, a) => sum + a.priceAtBooking * a.quantity,
         0,
       );
       totalPrice += addOnPrice;
-
-      // Access deliveryFee correctly
+      
       const deliveryFee = input.extra?.deliveryFee ?? 0;
       totalPrice += deliveryFee;
 
       // 2. Create the reservation record
-      // FIX 2: Removed all 'as any' casts. TypeScript now infers the correct
-      // type for items, optionalItems, and extra based on the Zod input and Prisma's JSON type handling.
       const reservation = await ctx.db.reservation.create({
         data: {
           userId: input.userId,
@@ -100,15 +93,34 @@ export const reservationRouter = createTRPCRouter({
           totalPrice,
           items: input.items,
           optionalItems: input.optionalItems ?? [],
-
-          reservationDate: input.reservationDate
-            ? new Date(input.reservationDate)
-            : null,
+          reservationDate: input.reservationDate ? new Date(input.reservationDate) : null,
           postcode: input.postcode ?? null,
-
           extra: input.extra ?? {},
         },
       });
+
+      // 3. Send Notification Email to yourself
+      try {
+        await resend.emails.send({
+          from: 'Reservations <onboarding@resend.dev>',
+          to: 'huuhung7301@gmail.com',
+          subject: `✨ New Reservation: ${input.customerName ?? 'Guest'}`,
+          html: `
+            <div style="font-family: sans-serif; line-height: 1.5;">
+              <h2>New Booking Received!</h2>
+              <p><strong>Customer:</strong> ${input.customerName ?? 'N/A'}</p>
+              <p><strong>Phone:</strong> ${input.customerPhone ?? 'N/A'}</p>
+              <p><strong>Postcode:</strong> ${input.postcode ?? 'N/A'}</p>
+              <p><strong>Total Price:</strong> $${totalPrice.toFixed(2)}</p>
+              <hr />
+              <p>Logged in via Clerk: ${input.userId ? 'Yes' : 'No'}</p>
+            </div>
+          `
+        });
+      } catch (error) {
+        // Log the error but don't break the user experience
+        console.error("Failed to send admin notification email:", error);
+      }
 
       return reservation;
     }),
@@ -181,21 +193,42 @@ export const reservationRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const { id, ...rest } = input;
 
-      // FIX 3: Remove unnecessary JSON serialization and rely on input types
       const dataToUpdate: Partial<Omit<UpdateReservationInput, "id">> = {
         ...rest,
-        // Convert reservationDate string to ISO string for database
         reservationDate: rest.reservationDate
           ? new Date(rest.reservationDate).toISOString()
           : undefined,
-        // Prisma handles JSON fields (items, optionalItems, extra) directly
-        // Ensure 'extra' is passed as an object or undefined, not null
         extra: rest.extra, 
       };
 
-      return ctx.db.reservation.update({
+      const updatedReservation = await ctx.db.reservation.update({
         where: { id },
         data: dataToUpdate,
       });
+
+      // Send Update Notification
+      try {
+        await resend.emails.send({
+          from: 'Reservations <onboarding@resend.dev>',
+          to: 'huuhung7301@gmail.com',
+          subject: `🔄 Reservation Updated: #${id}`,
+          html: `
+            <div style="font-family: sans-serif; line-height: 1.6; color: #333;">
+              <h2 style="color: #2563eb;">Reservation #${id} has been updated</h2>
+              <p><strong>Customer:</strong> ${updatedReservation.customerName ?? 'N/A'}</p>
+              <p><strong>New Date:</strong> ${updatedReservation.reservationDate ? updatedReservation.reservationDate.toLocaleDateString() : 'No change'}</p>
+              <p><strong>Total Price:</strong> $${updatedReservation.totalPrice.toFixed(2)}</p>
+              <hr style="border: 0; border-top: 1px solid #eee;" />
+              <p style="font-size: 0.9em; color: #666;">
+                Check the updated details in your admin dashboard.
+              </p>
+            </div>
+          `
+        });
+      } catch (error) {
+        console.error("Failed to send update notification email:", error);
+      }
+
+      return updatedReservation;
     }),
 });
